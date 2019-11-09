@@ -1,0 +1,12 @@
+.number-display-wrapper {
+	background-color: $green;
+	padding: 15px;
+	flex: 1;
+}
+
+.number-display {
+	color: #fff;
+	text-align: center;
+	font-size: 20px;
+	text-transform: capitalize;
+}

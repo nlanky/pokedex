@@ -1,0 +1,47 @@
+.sprite-container {
+	display: flex;
+	flex-direction: column;
+	background-color: $darkGrey;
+	min-height: 280px;
+}
+
+.sprite-middle {
+	flex: 1;
+	display: flex;
+	flex-direction: row;
+}
+
+.sprite-cycle {
+	min-width: 60px;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+
+	&.top {
+		min-height: 50px;
+	}
+
+	&.bottom {
+		min-height: 50px;
+	}
+
+	&.left {
+		flex-direction: column;
+	}
+
+	&.right {
+		flex-direction: column;
+	}
+}
+
+.sprite-wrapper {
+	flex: 1;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+
+.sprite-wrapper img {
+	width: 160px;
+	height: 160px;
+}

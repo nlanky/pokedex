@@ -1,0 +1,23 @@
+.grid-button-container {
+	display: flex;
+	flex-wrap: wrap;
+	margin-bottom: 30px;
+}
+
+.grid-button {
+	background: $blue;
+	width: 20%;
+	text-align: center;
+	padding: 15px;
+	border-top: 3px solid $darkGrey;
+	border-left: 3px solid $darkGrey;
+	height: 60px;
+
+	&:nth-child(5n) {
+		border-right: 3px solid $darkGrey;
+	}
+
+	&:nth-child(n+6) {
+		border-bottom: 3px solid $darkGrey;
+	}
+}

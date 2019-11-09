@@ -1,0 +1,23 @@
+.type-display-container {
+	display: flex;
+	flex-direction: row;
+}
+
+.type-display-wrapper {
+	text-align: center;
+	width: calc(50% - 10px);
+	color: #fff;
+	margin-right: 20px;
+	background-color: $darkGrey;
+	padding: 15px 30px;
+
+	&:nth-child(2n) {
+		margin-right: 0;
+	}
+}
+
+.type-display {
+	padding: 15px 10px;
+	border: 1px solid #fff;
+	border-radius: 30px;
+}

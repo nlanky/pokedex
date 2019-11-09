@@ -1,0 +1,21 @@
+.secondary-display-wrapper {
+	color: #fff;
+	background-color: $darkGrey;
+	padding: 15px 30px;
+	margin-bottom: 30px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 150px;
+	flex-wrap: wrap;
+}
+
+.statistic-wrapper {
+	width: calc(100%/3);
+	text-align: center;
+}
+
+.height-weight-wrapper {
+	width: 50%;
+	text-align: center;
+}

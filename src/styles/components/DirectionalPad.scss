@@ -1,0 +1,67 @@
+.dpad-wrapper {
+	width: 120px;
+	height: 120px;
+	position: relative;
+}
+
+.dpad-btn {
+	width: 40px;
+	height: 40px;
+	background: $darkGrey;
+	position: absolute;	
+}
+
+.dpad-middle {
+	top: 40px;
+	left: 40px;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	position: relative;
+}
+
+.dpad-middle:after {
+	content: '';
+	position: absolute;
+	right: 0;
+	bottom: 0;
+	width: 7px;
+	height: 7px;
+	background-color: #000;
+}
+
+.dpad-middle-finger {
+	border: 1px solid #000;
+	width: 25px;
+	height: 25px;
+	border-radius: 50%;
+	position: absolute;
+	top: 5px;
+	left: 5px;
+}
+
+.dpad-up {
+	top: 0;
+	left: 40px;
+	border-right: 7px solid #000;
+}
+
+.dpad-right {
+	top: 40px;
+	right: 0;
+	border-right: 7px solid #000;
+	border-bottom: 7px solid #000;
+}
+
+.dpad-down {
+	bottom: 0;
+	left: 40px;
+	border-right: 7px solid #000;
+	border-bottom: 7px solid #000;	
+}
+
+.dpad-left {
+	top: 40px;
+	left: 0;
+	border-bottom: 7px solid #000;
+}
