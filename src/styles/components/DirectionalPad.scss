@@ -1,19 +1,19 @@
 .dpad-wrapper {
-	width: 120px;
-	height: 120px;
+	width: 5.625rem;
+	height: 5.625rem;
 	position: relative;
 }
 
 .dpad-btn {
-	width: 40px;
-	height: 40px;
+	width: 1.875rem;
+	height: 1.875rem;
 	background: $darkGrey;
 	position: absolute;	
 }
 
 .dpad-middle {
-	top: 40px;
-	left: 40px;
+	top: 1.875rem;
+	left: 1.875rem;
 	display: flex;
 	justify-content: center;
 	align-items: center;
@@ -25,43 +25,106 @@
 	position: absolute;
 	right: 0;
 	bottom: 0;
-	width: 7px;
-	height: 7px;
+	width: 0.375rem;
+	height: 0.375rem;
 	background-color: #000;
 }
 
 .dpad-middle-finger {
 	border: 1px solid #000;
-	width: 25px;
-	height: 25px;
+	width: 1.171875rem;
+	height: 1.171875rem;
 	border-radius: 50%;
 	position: absolute;
-	top: 5px;
-	left: 5px;
+	top: 0.234375rem;
+	left: 0.234375rem;
 }
 
 .dpad-up {
 	top: 0;
-	left: 40px;
-	border-right: 7px solid #000;
+	left: 1.875rem;
+	border-right: 0.375rem solid #000;
 }
 
 .dpad-right {
-	top: 40px;
+	top: 1.875rem;
 	right: 0;
-	border-right: 7px solid #000;
-	border-bottom: 7px solid #000;
+	border-right: 0.375rem solid #000;
+	border-bottom: 0.375rem solid #000;
 }
 
 .dpad-down {
 	bottom: 0;
-	left: 40px;
-	border-right: 7px solid #000;
-	border-bottom: 7px solid #000;	
+	left: 1.875rem;
+	border-right: 0.375rem solid #000;
+	border-bottom: 0.375rem solid #000;	
 }
 
 .dpad-left {
-	top: 40px;
+	top: 1.875rem;
 	left: 0;
-	border-bottom: 7px solid #000;
+	border-bottom: 0.375rem solid #000;
+}
+
+@media only screen and (min-width: 500px) {
+	.dpad-wrapper {
+		width: 7.5rem;
+		height: 7.5rem;
+	}
+
+	.dpad-btn {
+		width: 2.5rem;
+		height: 2.5rem;
+	}
+
+	.dpad-middle {
+		top: 2.5rem;
+		left: 2.5rem;
+	}
+
+	.dpad-middle:after {
+		content: '';
+		position: absolute;
+		right: 0;
+		bottom: 0;
+		width: 0.5rem;
+		height: 0.5rem;
+		background-color: #000;
+	}
+	
+	.dpad-middle-finger {
+		border: 1px solid #000;
+		width: 1.5625rem;
+		height: 1.5625rem;
+		border-radius: 50%;
+		position: absolute;
+		top: 0.3125rem;
+		left: 0.3125rem;
+	}
+	
+	.dpad-up {
+		top: 0;
+		left: 2.5rem;
+		border-right: 0.5rem solid #000;
+	}
+	
+	.dpad-right {
+		top: 2.5rem;
+		right: 0;
+		border-right: 0.5rem solid #000;
+		border-bottom: 0.5rem solid #000;
+	}
+	
+	.dpad-down {
+		bottom: 0;
+		left: 2.5rem;
+		border-right: 0.5rem solid #000;
+		border-bottom: 0.5rem solid #000;	
+	}
+	
+	.dpad-left {
+		top: 2.5rem;
+		left: 0;
+		border-bottom: 0.5rem solid #000;
+	}
 }

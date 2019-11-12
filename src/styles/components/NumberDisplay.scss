@@ -1,12 +1,21 @@
 .number-display-wrapper {
 	background-color: $green;
-	padding: 15px;
+	padding: 0.703125rem;
 	flex: 1;
 }
 
 .number-display {
 	color: #fff;
 	text-align: center;
-	font-size: 20px;
 	text-transform: capitalize;
+}
+
+@media only screen and (min-width: 500px) {
+	.number-display-wrapper {
+		padding: 0.9375rem;
+	}
+	
+	.number-display {
+		font-size: 1.25rem;
+	}
 }

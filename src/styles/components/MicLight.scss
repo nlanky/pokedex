@@ -1,6 +1,6 @@
 .mic-light-holder {
-	width: 80px;
-	height: 80px;
+	width: 3.75rem;
+	height: 3.75rem;
 	background-color: #fff;
 	border-radius: 50%;
 	display: flex;
@@ -11,8 +11,8 @@
 
 .mic-light {
 	position: relative;
-	width: 70px;
-	height: 70px;
+	width: 3.28125rem;
+	height: 3.28125rem;
 	background-color: $blue;
 	border-radius: 50%;
 	overflow: hidden;
@@ -21,22 +21,48 @@
 
 .mic-light:before {
 	content: '';
-	background: #00dbff;
-	width: 60px;
-	height: 60px;
+	background: $micBlue;
+	width: 2.8125rem;
+	height: 2.8125rem;
 	position: absolute;
 	border-radius: 55%;
-	top: -7px;
-	left: -7px;
+	top: -0.3rem;
+	left: -0.3rem;
 }
 
 .mic-light:after {
 	content: "";
-    width: 13px;
-    height: 13px;
+    width: 0.609375rem;
+    height: 0.609375rem;
     position: absolute;
     background: #fff;
     border-radius: 50%;
-    top: 15px;
-    left: 13px;
+    top: 0.703125rem;
+    left: 0.609375rem;
+}
+
+@media only screen and (min-width: 500px) {
+	.mic-light-holder {
+		width: 5rem;
+		height: 5rem;		
+	}
+
+	.mic-light {
+		width: 4.375rem;
+		height: 4.375rem;
+	}
+
+	.mic-light:before {
+		width: 3.75rem;
+		height: 3.75rem;
+		top: -0.4rem;
+		left: -0.4rem;
+	}
+
+	.mic-light:after {
+		width: 0.8125rem;
+		height: 0.8125rem;
+		top: 0.9375rem;
+		left: 0.8125rem;
+	}
 }

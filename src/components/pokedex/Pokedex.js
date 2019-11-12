@@ -19,6 +19,7 @@ import GridButton from '../gridButton';
 import ConfirmButton from '../confirmButton';
 import SlimButton from '../slimButton';
 import Vent from '../vent';
+import SpriteButton from '../spriteButton';
 import PowerButton from '../powerButton';
 
 var spriteRefObj = {
@@ -33,7 +34,7 @@ export default class Pokedex extends React.Component {
 		pokemonApiUrl: 'https://pokeapi.co/api/v2/pokemon/',
 		pokemonSpeciesUrl: 'https://pokeapi.co/api/v2/pokemon-species/',
 		cryUrl: '',
-		pokedexNumber: 151,
+		pokedexNumber: 1,
 		pokemonData: [],
 		pokemonSpeciesData: [],
 		dataReady: false,
@@ -225,44 +226,12 @@ export default class Pokedex extends React.Component {
 							<IndicatorLight colour="yellow" />
 							<IndicatorLight colour="green" />
 						</div>
-						<div
-							style={{
-								width: '20%',
-								display: 'flex',
-								flexDirection: 'column',
-								position: 'relative',
-							}}
-						>
-							<div
-								style={{
-									position: 'absolute',
-									height: 1,
-									backgroundColor: '#2A2B26',
-									width: 111.77,
-									transform: 'rotate(-32.4673deg)',
-									top: 89,
-									left: -9,
-								}}
-							/>
+						<div className="lid-middle">
+							<div className="lid-diagonal" />
 						</div>
-						<div
-							style={{
-								width: '30%',
-								marginRight: 20,
-							}}
-						>
-							<div
-								style={{
-									height: 60,
-									borderBottom: '1px solid #2A2B26',
-								}}
-							/>
-							<div
-								style={{
-									height: 60,
-									borderRight: '1px solid #2A2B26',
-								}}
-							/>
+						<div className="lid-right">
+							<div className="lid-right-top" />
+							<div className="lid-right-bottom" />
 						</div>
 					</div>
 					<div className="left-screen-content">
@@ -281,15 +250,14 @@ export default class Pokedex extends React.Component {
 										{displayLeftCycle &&
 											<>
 												<FaChevronLeft color="#fff" />
-												<span style={{color: '#fff', marginTop: 10}}>#{displayLeftNumber}</span>
+												<span className="nav-number-text">#{displayLeftNumber}</span>
 											</>
 										}										
 									</div>
 									<div className="sprite-wrapper">
 										{Object.keys(spriteObj).map(function(spriteKey) {
 											const spriteUrl = spriteObj[spriteKey];
-											if (!spriteUrl)
-												return;
+											if (!spriteUrl) return;
 
 											return <Sprite spriteUrl={spriteUrl} spriteKey={spriteKey} activeSprite={spriteKey === spriteRefObj[activeSprite]} key={spriteKey} />;
 										})}
@@ -298,7 +266,7 @@ export default class Pokedex extends React.Component {
 										{displayRightCycle &&
 											<FaChevronRight color="#fff" />
 										}
-										<span style={{color: '#fff', marginTop: 10}}>#{displayRightNumber}</span>
+										<span className="nav-number-text">#{displayRightNumber}</span>
 									</div>
 								</div>
 								<div className="sprite-bottom">
@@ -310,8 +278,8 @@ export default class Pokedex extends React.Component {
 								</div>
 							</div>
 							<div className="main-display-footer">
-								<PowerButton />
-								<div style={{ display: 'flex', flexDirection: 'column' }}>
+								<SpriteButton />
+								<div className="vent-container">
 									<Vent />
 									<Vent />
 									<Vent />
@@ -321,7 +289,7 @@ export default class Pokedex extends React.Component {
 						</div>
 						<div className="left-screen-footer">
 							<div className="left-screen-footer-left-col">
-								<div className="sprite-button" />
+								<PowerButton />
 							</div>
 							<div className="left-screen-footer-middle-col">
 								<div className="left-screen-footer-row">
@@ -350,85 +318,20 @@ export default class Pokedex extends React.Component {
 					<div className="hinge-bottom-lid" />
 				</div>
 				<div className="right-screen">
-					<div
-						style={{
-							height: 60,
-							backgroundColor: '#fff',
-						}}
-					/>
-					<div
-						style={{
-							height: 60,
-							backgroundColor: '#fff',
-							display: 'flex',
-							flexDirection: 'row',
-						}}
-					>
-						<div
-							style={{
-								width: '30%',
-								backgroundColor: '#D72113',
-								paddingLeft: 20,
-								paddingTop: 20,
-								display: 'flex',
-							}}
-						>
-							<div style={{borderLeft: '1px solid #000', borderTop: '1px solid #000', flex: 1,}} />
+					<div className="right-lid-top" />
+					<div className="right-lid-wrapper">
+						<div className="right-lid-left">
+							<div className="right-lid-left-box" />
 						</div>
-						<div
-							style={{
-								width: '20%',
-								position: 'relative',
-							}}
-						>
-							<div
-								style={{
-									position: 'absolute',
-									bottom: 0,
-									left: 0,
-									borderTop: '60px solid transparent',
-									borderLeft: '60px solid #D72113',
-								}}
-							/>
-							<div
-								style={{
-									width: 82.6,
-									height: 1,
-									backgroundColor: '#2A2B26',
-									transform: 'rotate(45deg)',
-									position: 'absolute',
-									top: 49,
-									left: -14,
-								}}
-							/>
+						<div className="right-lid-middle">
+							<div className="right-lid-middle-cut" />
+							<div className="right-lid-middle-diagonal" />
 						</div>					
-						<div
-							style={{
-								width: '50%',
-							}}
-						/>
+						<div className="right-lid-right" />
 					</div>
-					<div
-						style={{
-							display: 'flex',
-							flexDirection: 'row',
-							height: 20,
-							marginLeft: 20,
-							marginRight: 20,
-							borderLeft: '1px solid #2A2B26',
-						}}
-					>
-						<div
-							style={{
-								width: '40%',
-							}}
-						/>
-						<div
-							style={{
-								width: '60%',
-								borderBottom: '1px solid #2A2B26',
-							}}
-						/>						
+					<div className="right-lid-bottom">
+						<div className="right-lid-bottom-left-col" />
+						<div className="right-lid-bottom-right-col" />						
 					</div>
 					<div className="right-screen-content">
 						<SecondaryDisplay

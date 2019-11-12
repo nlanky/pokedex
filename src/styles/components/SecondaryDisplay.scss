@@ -1,13 +1,14 @@
 .secondary-display-wrapper {
 	color: #fff;
 	background-color: $darkGrey;
-	padding: 15px;
-	margin-bottom: 30px;
+	padding: 0.703125rem;
+	margin-bottom: 1.40625rem;
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	min-height: 150px;
+	min-height: 7.03125rem;
 	flex-wrap: wrap;
+	font-size: 0.84375rem;
 }
 
 .statistic-wrapper {
@@ -18,4 +19,13 @@
 .height-weight-wrapper {
 	width: 50%;
 	text-align: center;
+}
+
+@media only screen and (min-width: 500px) {
+	.secondary-display-wrapper {
+		padding: 0.9375rem;
+		margin-bottom: 1.875rem;
+		min-height: 9.375rem;
+		font-size: 1.125rem;
+	}
 }

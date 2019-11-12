@@ -5,11 +5,11 @@
 
 .type-display-wrapper {
 	text-align: center;
-	width: calc(50% - 10px);
+	width: calc(50% - 0.46875rem);
 	color: #fff;
-	margin-right: 20px;
+	margin-right: 0.9375rem;
 	background-color: $darkGrey;
-	padding: 15px 30px;
+	padding: 0.703125rem 1.40625rem;
 
 	&:nth-child(2n) {
 		margin-right: 0;
@@ -17,7 +17,20 @@
 }
 
 .type-display {
-	padding: 15px 10px;
+	padding: 0.703125rem 0.46875rem;
 	border: 1px solid #fff;
-	border-radius: 30px;
+	border-radius: 1.40625rem;
+}
+
+@media only screen and (min-width: 500px) {
+	.type-display-wrapper {
+		width: calc(50% - 0.625rem);
+		margin-right: 1.25rem;
+		padding: 0.9375rem 1.875rem;
+	}
+	
+	.type-display {
+		padding: 0.9375rem 0.625rem;
+		border-radius: 1.875rem;
+	}	
 }

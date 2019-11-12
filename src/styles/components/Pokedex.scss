@@ -1,30 +1,33 @@
+// Font import
 @import url('https://fonts.googleapis.com/css?family=Squada+One&display=swap');
+
 
 * {
 	box-sizing: border-box;
+	margin: 0;
 }
 
 body {
 	font-family: 'Squada One', cursive;
-	font-size: 18px;
 }
 
 .container {
 	display: flex;
 	flex-direction: column;
 	max-width: 1080px;
-	flex-wrap: wrap;
 }
 
+// Left screen
 .left-screen {
 	background-color: $red;
-	max-width: 500px;
+	min-width: 23.4375rem;
+	max-width: 31.25rem;
 }
 
 .left-screen-content {
-	min-height: 590px;
-	padding: 50px 30px 30px 30px;
-	margin: 0 20px 20px 20px;
+	min-height: 27.65625rem;
+	padding: 2.34375rem 1.5rem 1.5rem 1.5rem;
+	margin: 0 0.9375rem 0.9375rem 0.9375rem;
 	border-bottom: 1px solid $darkGrey;
 	border-left: 1px solid $darkGrey;
 	border-right: 1px solid $darkGrey;
@@ -32,15 +35,7 @@ body {
 
 .left-screen-header {
 	display: flex;
-	min-height: 120px;
-}
-
-.lights-container {
-	display: flex;
-	width: 50%;
-	border-bottom: 1px solid $darkGrey;
-	margin-left: 20px;
-	margin-top: 20px;
+	min-height: 5.625rem;
 }
 
 .left-screen-footer {
@@ -50,12 +45,12 @@ body {
 
 .left-screen-footer-left-col {
 	width: 20%;
-	margin-right: 30px;
+	margin-right: 1.40625rem;
 }
 
 .left-screen-footer-middle-col {
 	width: 50%;
-	margin-right: 30px;
+	margin-right: 1.40625rem;
 	display: flex;
 	flex-direction: column;
 	justify-content: space-between;
@@ -70,46 +65,174 @@ body {
 	flex-direction: row;
 }
 
-.right-screen {
+// Lights container
+.lights-container {
 	display: flex;
-	flex-direction: column;
-	background-color: $red;
-	max-width: 500px;
-}
-
-.right-screen-content {
-	min-height: 570px;
-	padding: 30px;
-	margin: 0 20px 20px 20px;
+	width: 50%;
 	border-bottom: 1px solid $darkGrey;
-	border-left: 1px solid $darkGrey;
-	border-right: 1px solid $darkGrey;
+	margin-left: 0.9375rem;
+	margin-top: 0.9375rem;
 }
 
+// Left screen display
 .main-display-wrapper {
 	position: relative;
-	padding: 30px 30px 0 30px;
+	padding: 1.40625rem 1.40625rem 0 1.40625rem;
 	background-color: #fff;
-	margin-bottom: 30px;
+	margin-bottom: 1.40625rem;
 }
 
 .main-display-cut {
 	position: absolute;
 	bottom: 0;
 	left: 0;
-	border-top: 40px solid transparent;
-	border-left: 40px solid $red;
+	border-top: 1.875rem solid transparent;
+	border-left: 1.875rem solid $red;
 	z-index: 1;
 }
 
 .main-display-footer {
-	height: 45px;
+	height: 2.109375rem;
 	display: flex;
 	flex-direction: row;
 	align-items: center;
 	justify-content: space-between;
 }
 
+.nav-number-text {
+	color: #fff;
+	margin-top: 0.625rem;
+}
+
+.vent-container {
+	display: flex;
+	flex-direction: column;	
+}
+
+// Left lid top
+.lid-middle {
+	width: 20%;
+	display: flex;
+	position: relative;
+	flex-direction: column;
+}
+
+.lid-diagonal {
+	position: absolute;
+	width: 5.14857rem;
+	height: 1px;
+	background-color: $darkGrey;
+	transform: rotate(-33.11deg);
+	top: 4.1875rem;
+	left: -0.35rem;
+}
+
+.lid-right {
+	width: 30%;
+	margin-right: 0.9375rem;
+}
+
+.lid-right-top {
+	height: 2.8125rem;
+	border-bottom: 1px solid $darkGrey;
+}
+
+.lid-right-bottom {
+	height: 2.8125rem;
+	border-right: 1px solid $darkGrey;
+}
+
+// Right screen
+.right-screen {
+	display: flex;
+	flex-direction: column;
+	background-color: $red;
+	min-width: 23.4375rem;
+	max-width: 31.25rem;
+}
+
+.right-screen-content {
+	min-height: 26.71875rem;
+	padding: 1.40625rem;
+	margin: 0 0.9375rem 0.9375rem 0.9375rem;
+	border-bottom: 1px solid $darkGrey;
+	border-left: 1px solid $darkGrey;
+	border-right: 1px solid $darkGrey;
+}
+
+// Right lid top
+.right-lid-top {
+	height: 2.8125rem;
+	background-color: #fff;
+}
+
+.right-lid-wrapper {
+	height: 2.8125rem;
+	background-color: #fff;
+	display: flex;
+	flex-direction: row;
+}
+
+.right-lid-left {
+	width: 30%;
+	background-color: $red;
+	padding-left: 0.9375rem;
+	padding-top: 0.9375rem;
+	display: flex;
+}
+
+.right-lid-left-box {
+	border-left: 1px solid #000;
+	border-top: 1px solid #000;
+	flex: 1;
+}
+
+.right-lid-middle {
+	width: 20%;
+	position: relative;
+}
+
+.right-lid-middle-cut {
+	position: absolute;
+	bottom: 0;
+	left: 0;
+	border-top: 2.8125rem solid transparent;
+	border-left: 2.8125rem solid $red;
+}
+
+.right-lid-middle-diagonal {
+	position: absolute;
+	width: 3.825rem;
+	height: 1px;
+	background-color: $darkGrey;
+	transform: rotate(45deg);
+	top: 2.35rem;
+	left: -0.6rem;
+}
+
+.right-lid-right {
+	width: 50%;
+}
+
+.right-lid-bottom {
+	display: flex;
+	flex-direction: row;
+	height: 0.9375rem;
+	margin-left: 0.9375rem;
+	margin-right: 0.9375rem;
+	border-left: 1px solid $darkGrey;
+}
+
+.right-lid-bottom-left-col {
+	width: 40%;
+}
+
+.right-lid-bottom-right-col {
+	width: 60%;
+	border-bottom: 1px solid $darkGrey;
+}
+
+// Miscellaneous buttons
 .misc-button-container {
 	display: flex;
 	flex-direction: row;
@@ -131,13 +254,13 @@ body {
 .misc-button-row {
 	display: flex;	
 	flex-direction: row;
-	margin-bottom: 15px;
+	margin-bottom: 0.75rem;
 }
 
 .white-grid-button {
 	background-color: #fff;
-	width: 84px;
-	height: 60px;
+	width: 3.9375rem;
+	height: 2.8125rem;
 	border-top: 3px solid $darkGrey;
 	border-left: 3px solid $darkGrey;
 
@@ -151,39 +274,17 @@ body {
 	}
 }
 
-.sprite-button {
-	width: 50px;
-	height: 50px;
-	background-color: $darkGrey;
-	border-radius: 50%;
-	box-shadow: 2px 3px 0px 0px rgba(0,0,0,0.2);
-}
-
+// Hinge
 .hinge-container {
 	display: none;
-	width: 60px;
+	width: 2.8125rem;
 	flex-direction: column;
 	border-right: 1px solid $darkGrey;
 	background-color: $red;
 }
 
-@media only screen and (min-width: 960px) {
-	.hinge-container {
-		display: flex;
-	}
-
-	.container {
-		flex-direction: row;
-		flex-wrap: nowrap;
-	}
-
-	.left-screen, .right-screen {
-		width: 50%;
-	}
-}
-
 .hinge-top {
-	height: 60px;
+	height: 2.8125rem;
 	border-bottom: 1px solid $darkGrey;
 	border-left: 1px solid $darkGrey;	
 }
@@ -194,13 +295,208 @@ body {
 }
 
 .hinge-bottom {
-	height: 60px;
+	height: 2.8125rem;
 	border-top: 1px solid $darkGrey;
 	border-left: 1px solid $darkGrey;
 }
 
 .hinge-bottom-lid {
-	height: 20px;
+	height: 0.9375rem;
 	border-top: 1px solid $darkGrey;
 	border-left: 1px solid $darkGrey;
+}
+
+@media only screen and (min-width: 500px) {
+	// Left screen
+	.left-screen-content {
+		min-height: 36.875rem;
+		padding: 3.125rem 2rem 2rem 2rem;
+		margin: 0 1.25rem 1.25rem 1.25rem;
+	}
+	
+	.left-screen-header {
+		min-height: 7.5rem;
+	}
+
+	.left-screen-footer-left-col {
+		margin-right: 1.875rem;
+	}
+	
+	.left-screen-footer-middle-col {
+		margin-right: 1.875rem;
+	}
+
+	// Lights container
+	.lights-container {
+		margin-left: 1.25rem;
+		margin-top: 1.25rem;
+	}
+
+	// Left screen display
+	.main-display-wrapper {
+		padding: 1.875rem 1.875rem 0 1.875rem;
+		margin-bottom: 1.875rem;
+	}
+	
+	.main-display-cut {
+		border-top: 2.5rem solid transparent;
+		border-left: 2.5rem solid $red;
+	}
+	
+	.main-display-footer {
+		height: 2.8125rem;
+	}	
+
+	// Left lid top
+	.lid-middle {
+		width: 20%;
+		display: flex;
+		position: relative;
+		flex-direction: column;
+	}
+
+	.lid-diagonal {
+		position: absolute;
+		width: 6.864765rem;
+		height: 1px;
+		background-color: $darkGrey;
+		transform: rotate(-32.4673deg);
+		top: 5.5625rem;
+		left: -0.5625rem;
+	}
+
+	.lid-right {
+		width: 30%;
+		margin-right: 1.25rem;
+	}
+
+	.lid-right-top {
+		height: 3.75rem;
+		border-bottom: 1px solid $darkGrey;
+	}
+
+	.lid-right-bottom {
+		height: 3.75rem;
+		border-right: 1px solid $darkGrey;
+	}
+	
+	// Right screen
+	.right-screen-content {
+		min-height: 35.625rem;
+		padding: 1.875rem;
+		margin: 0 1.25rem 1.25rem 1.25rem;
+	}
+
+	// Right lid top
+	.right-lid-top {
+		height: 3.75rem;
+		background-color: #fff;
+	}
+
+	.right-lid-wrapper {
+		height: 3.75rem;
+		background-color: #fff;
+		display: flex;
+		flex-direction: row;
+	}
+
+	.right-lid-left {
+		width: 30%;
+		background-color: $red;
+		padding-left: 1.25rem;
+		padding-top: 1.25rem;
+		display: flex;
+	}
+
+	.right-lid-left-box {
+		border-left: 1px solid #000;
+		border-top: 1px solid #000;
+		flex: 1;
+	}
+
+	.right-lid-middle {
+		width: 20%;
+		position: relative;
+	}
+
+	.right-lid-middle-cut {
+		position: absolute;
+		bottom: 0;
+		left: 0;
+		border-top: 3.75rem solid transparent;
+		border-left: 3.75rem solid $red;
+	}
+
+	.right-lid-middle-diagonal {
+		position: absolute;
+		width: 5.1rem;
+		height: 1px;
+		background-color: $darkGrey;
+		transform: rotate(45deg);
+		top: 3.05rem;
+		left: -0.85rem;
+	}
+
+	.right-lid-right {
+		width: 50%;
+	}
+
+	.right-lid-bottom {
+		display: flex;
+		flex-direction: row;
+		height: 1.25rem;
+		margin-left: 1.25rem;
+		margin-right: 1.25rem;
+		border-left: 1px solid $darkGrey;
+	}
+
+	.right-lid-bottom-left-col {
+		width: 40%;
+	}
+
+	.right-lid-bottom-right-col {
+		width: 60%;
+		border-bottom: 1px solid $darkGrey;
+	}
+	
+	// Miscellaneous buttons
+	.misc-button-row {
+		margin-bottom: 1rem;
+	}
+	
+	.white-grid-button {
+		width: 5.25rem;
+		height: 3.75rem;
+	}
+	
+	// Hinge
+	.hinge-container {
+		width: 3.75rem;
+	}
+	
+	.hinge-top {
+		height: 3.75rem;	
+	}
+	
+	.hinge-bottom {
+		height: 3.75rem;
+	}
+	
+	.hinge-bottom-lid {
+		height: 1.25rem;
+	}
+}
+
+@media only screen and (min-width: 960px) {
+	.hinge-container {
+		display: flex;
+	}
+
+	.container {
+		flex-direction: row;
+	}
+
+	.left-screen, .right-screen {
+		width: 50%;
+	}
 }

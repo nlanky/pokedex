@@ -1,17 +1,17 @@
 .grid-button-container {
 	display: flex;
 	flex-wrap: wrap;
-	margin-bottom: 30px;
+	margin-bottom: 1.40625rem;
 }
 
 .grid-button {
 	background: $blue;
 	width: 20%;
 	text-align: center;
-	padding: 15px;
+	padding: 0.75rem;
 	border-top: 3px solid $darkGrey;
 	border-left: 3px solid $darkGrey;
-	height: 60px;
+	height: 2.8125rem;
 
 	&:nth-child(5n) {
 		border-right: 3px solid $darkGrey;
@@ -20,4 +20,15 @@
 	&:nth-child(n+6) {
 		border-bottom: 3px solid $darkGrey;
 	}
+}
+
+@media only screen and (min-width: 500px) {
+	.grid-button-container {
+		margin-bottom: 1.875rem;
+	}
+	
+	.grid-button {
+		padding: 1rem;
+		height: 3.75rem;
+	}	
 }

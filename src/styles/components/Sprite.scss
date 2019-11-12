@@ -2,7 +2,7 @@
 	display: flex;
 	flex-direction: column;
 	background-color: $darkGrey;
-	min-height: 280px;
+	min-height: 13.125rem;
 }
 
 .sprite-middle {
@@ -12,17 +12,17 @@
 }
 
 .sprite-cycle {
-	min-width: 60px;
+	min-width: 3.75rem;
 	display: flex;
 	justify-content: center;
 	align-items: center;
 
 	&.top {
-		min-height: 50px;
+		min-height: 2.34375rem;
 	}
 
 	&.bottom {
-		min-height: 50px;
+		min-height: 2.34375rem;
 	}
 
 	&.left {
@@ -42,6 +42,30 @@
 }
 
 .sprite-wrapper img {
-	width: 160px;
-	height: 160px;
+	width: 7.5rem;
+	height: 7.5rem;
+
+}
+
+@media only screen and (min-width: 500px) {
+	.sprite-container {
+		min-height: 17.5rem;
+	}
+
+	.sprite-cycle {
+		min-width: 3.75rem;
+	
+		&.top {
+			min-height: 3.125rem;
+		}
+	
+		&.bottom {
+			min-height: 3.125rem;
+		}
+	}	
+
+	.sprite-wrapper img {
+		width: 10rem;
+		height: 10rem;
+	}
 }
