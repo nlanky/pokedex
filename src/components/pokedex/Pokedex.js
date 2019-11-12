@@ -130,8 +130,7 @@ export default class Pokedex extends React.Component {
 		} = this.state;
 
 		const nextSpriteNumber = activeSprite + 1;
-		if (nextSpriteNumber > 3)
-			return;
+		if (nextSpriteNumber > 3) return;
 
 		this.setState({
 			activeSprite: nextSpriteNumber,
@@ -144,8 +143,7 @@ export default class Pokedex extends React.Component {
 		} = this.state;
 
 		const prevSpriteNumber = activeSprite - 1;
-		if (prevSpriteNumber < 0)
-			return;
+		if (prevSpriteNumber < 0) return;
 
 		this.setState({
 			activeSprite: prevSpriteNumber,

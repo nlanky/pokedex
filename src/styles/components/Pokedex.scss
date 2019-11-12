@@ -11,13 +11,14 @@ body {
 
 .container {
 	display: flex;
-	flex-direction: row;
-	background-color: $red;
+	flex-direction: column;
 	max-width: 1080px;
+	flex-wrap: wrap;
 }
 
 .left-screen {
-	width: 50%;
+	background-color: $red;
+	max-width: 500px;
 }
 
 .left-screen-content {
@@ -70,9 +71,10 @@ body {
 }
 
 .right-screen {
-	width: 50%;
 	display: flex;
 	flex-direction: column;
+	background-color: $red;
+	max-width: 500px;
 }
 
 .right-screen-content {
@@ -158,10 +160,26 @@ body {
 }
 
 .hinge-container {
+	display: none;
 	width: 60px;
-	display: flex;
 	flex-direction: column;
 	border-right: 1px solid $darkGrey;
+	background-color: $red;
+}
+
+@media only screen and (min-width: 960px) {
+	.hinge-container {
+		display: flex;
+	}
+
+	.container {
+		flex-direction: row;
+		flex-wrap: nowrap;
+	}
+
+	.left-screen, .right-screen {
+		width: 50%;
+	}
 }
 
 .hinge-top {
