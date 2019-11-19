@@ -279,6 +279,7 @@ export default class Pokedex extends React.Component {
 		this.setState({
 			pokedexNumber: randomNumber,
 			dataReady: false,
+			activeSecondaryDisplay: 'flavourText',
 		})
 
 		this.getData(randomNumber);
