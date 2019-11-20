@@ -4,6 +4,7 @@ import versionGroupArr from './versionGroups';
 
 const generatePokemonTypeEffectiveness = (typeOneDamageRelations, typeTwoDamageRelations, abilities) => {
 	const typeEffectivenessObj = {};
+	const typeEffectivenessArr = [];
 
 	// Function to add missing types from object with normal effectiveness
 	const addMissingNormalDamage = () => {
@@ -13,39 +14,98 @@ const generatePokemonTypeEffectiveness = (typeOneDamageRelations, typeTwoDamageR
 		}
 	};
 
-	// TODO: Add text to type effectiveness display about abilities
 	// Take into account any abilities
+	// If Pokemon has 1 ability, can apply changes to typeEffectivenessObj
 	const adjustForAbilities = () => {
 		const typeKeys = Object.keys(typeEffectivenessObj);
-		if (abilities.length > 1) return;
+		const hasMultipleAbilities = abilities.length > 1;
 		abilities.forEach((ability) => {
+			const affectedTypeArr = [];
 			const abilityName = ability.name;
-			if (abilityName === 'Wonder Guard') {
-				typeKeys.forEach((type) => {
-					if (typeEffectivenessObj[type] < 2) typeEffectivenessObj[type] = 0;
-				});
-			} else if (abilityName === 'Filter' || abilityName === 'Prism Armor' || abilityName === 'Solid Rock') {
-				typeKeys.forEach((type) => {
-					if (typeEffectivenessObj[type] >= 2) typeEffectivenessObj[type] *= 0.75;
-				});
-			} else if (abilityName === 'Flash Fire') {
-				typeEffectivenessObj.fire = 0;
-			} else if (abilityName === 'Fluffy') {
-				typeEffectivenessObj.fire *= 2;
-			} else if (abilityName === 'Heatproof' || abilityName === 'Water Bubble') {
-				typeEffectivenessObj.fire *= 0.5;
-			} else if (abilityName === 'Levitate') {
-				typeEffectivenessObj.ground = 0;
-			} else if (abilityName === 'Lightning Rod' || abilityName === 'Motor Drive' || abilityName === 'Volt Absorb') {
-				typeEffectivenessObj.electric = 0;
-			} else if (abilityName === 'Sap Sipper') {
-				typeEffectivenessObj.grass = 0;
-			} else if (abilityName === 'Storm Drain' || abilityName === 'Water Absorb') {
-				typeEffectivenessObj.water = 0;
-			} else if (abilityName === 'Thick Fat') {
-				typeEffectivenessObj.fire *= 0.5;
-				typeEffectivenessObj.ice *= 0.5;
+			switch (abilityName) {
+				case 'Wonder Guard':
+					typeKeys.forEach((type) => {
+						if (typeEffectivenessObj[type] < 2) {
+							if (hasMultipleAbilities) affectedTypeArr.push(`${type.charAt(0).toUpperCase()}${type.slice(1)} (0x)`);
+							else typeEffectivenessObj[type] = 0;
+						}
+					});
+					break;
+				case 'Filter':
+				case 'Prism Armor':
+				case 'Solid Rock':
+					typeKeys.forEach((type) => {
+						const multiplier = typeEffectivenessObj[type];
+						if (multiplier >= 2) {
+							if (hasMultipleAbilities) affectedTypeArr.push(`${type.charAt(0).toUpperCase()}${type.slice(1)} (${multiplier * 0.75}x)`);
+							else typeEffectivenessObj[type] *= 0.75;
+						}
+					});
+					break;
+				case 'Flash Fire':
+					if (hasMultipleAbilities) affectedTypeArr.push('Fire (0x)');
+					else typeEffectivenessObj.fire = 0;
+					break;
+				case 'Fluffy':
+					if (hasMultipleAbilities) affectedTypeArr.push(`Fire (${typeEffectivenessObj.fire * 2}x)`);
+					else typeEffectivenessObj.fire *= 2;
+					break;
+				case 'Heatproof':
+				case 'Water Bubble':
+					if (hasMultipleAbilities) affectedTypeArr.push(`Fire (${typeEffectivenessObj.fire * 0.5}x)`);
+					else typeEffectivenessObj.fire *= 0.5;
+					break;
+				case 'Levitate':
+					if (hasMultipleAbilities) affectedTypeArr.push('Ground (0x)');
+					else typeEffectivenessObj.ground = 0;
+					break;
+				case 'Lightning Rod':
+				case 'Motor Drive':
+				case 'Volt Absorb':
+					if (hasMultipleAbilities) affectedTypeArr.push('Electric (0x)');
+					else typeEffectivenessObj.electric = 0;
+					break;
+				case 'Sap Sipper':
+					if (hasMultipleAbilities) affectedTypeArr.push('Grass (0x)');
+					else typeEffectivenessObj.grass = 0;
+					break;
+				case 'Storm Drain':
+				case 'Water Absorb':
+					if (hasMultipleAbilities) affectedTypeArr.push('Water (0x)');
+					else typeEffectivenessObj.water = 0;
+					break;
+				case 'Thick Fat':
+					if (hasMultipleAbilities) {
+						affectedTypeArr.push(`Fire (${typeEffectivenessObj.fire * 0.5}x)`);
+						affectedTypeArr.push(`Ice (${typeEffectivenessObj.ice * 0.5}x)`);
+					} else {
+						typeEffectivenessObj.fire *= 0.5;
+						typeEffectivenessObj.ice *= 0.5;
+					}
+					break;
+				default:
+					break;
 			}
+
+			// Only display ability text if Pokemon has one of above abilities
+			const abilityText = `* If this Pokémon has ${abilityName}, the following type effectiveness multipliers apply: `;
+			if (affectedTypeArr.length > 0)
+				typeEffectivenessArr.push({
+					type: 'ability',
+					name: abilityName,
+					description: `${abilityText}${affectedTypeArr.join(', ')}`,
+				});
+		});
+	};
+
+	// Convert typeEffectivenessObj into array for rendering
+	const formatTypeEffectivenessArr = () => {
+		Object.keys(typeEffectivenessObj).forEach((type) => {
+			typeEffectivenessArr.push({
+				type: 'type',
+				name: type,
+				multiplier: typeEffectivenessObj[type],
+			});
 		});
 	};
 
@@ -66,7 +126,8 @@ const generatePokemonTypeEffectiveness = (typeOneDamageRelations, typeTwoDamageR
 	if (!typeTwoDamageRelations) {
 		addMissingNormalDamage();
 		adjustForAbilities();
-		return typeEffectivenessObj;
+		formatTypeEffectivenessArr();
+		return typeEffectivenessArr;
 	}
 
 	// Double existing damage, otherwise set to 2x
@@ -120,7 +181,8 @@ const generatePokemonTypeEffectiveness = (typeOneDamageRelations, typeTwoDamageR
 
 	addMissingNormalDamage();
 	adjustForAbilities();
-	return typeEffectivenessObj;
+	formatTypeEffectivenessArr();
+	return typeEffectivenessArr;
 };
 
 const selectSecondaryDisplayFlavourText = (flavourTextArr, language) => {

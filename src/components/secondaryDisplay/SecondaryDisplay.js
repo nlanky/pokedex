@@ -24,10 +24,15 @@ const StatisticsComponent = (props) => {
 	return (
 		<>
 			{statistics.map((stat) => {
+				const {
+					name,
+					base_stat,
+				} = stat;
+
 				return (
 					<div className="statistic-wrapper" key={stat.name}>
-						<div>{stat.name}</div>
-						<div>{stat.base_stat}</div>
+						<div>{name}</div>
+						<div>{base_stat}</div>
 					</div>
 				);
 			})}
@@ -42,14 +47,22 @@ const HeightWeightComponent = (props) => {
 
 	return (
 		<>
-			<div className="height-weight-wrapper">
-				<div>Height</div>
-				<div>{`${heightWeight.height / 10}m`}</div>
-			</div>
-			<div className="height-weight-wrapper">
-				<div>Weight</div>
-				<div>{`${heightWeight.weight / 10}kg`}</div>
-			</div>
+			{heightWeight.map((item) => {
+				const {
+					name,
+					value,
+				} = item;
+
+				return (
+					<div className="height-weight-wrapper" key={name}>
+						<div>{name}</div>
+						<div>
+							{value / 10}
+							{name === 'Height' ? 'm' : 'kg'}
+						</div>
+					</div>
+				);
+			})}
 		</>
 	);
 };
@@ -63,32 +76,20 @@ const TypeEffectivenessComponent = (props) => {
 	const damagedNormallyBy = [];
 	const resistantTo = [];
 	const immuneTo = [];
-	const typeArr = Object.keys(typeEffectiveness);
-	for (let i = 0; i < typeArr.length; i++) {
-		const type = typeArr[i];
-		const effectiveness = typeEffectiveness[type];
-		if (effectiveness >= 2) {
-			weakTo.push({
-				type,
-				effectiveness,
-			});
-		} else if (effectiveness >= 1) {
-			damagedNormallyBy.push({
-				type,
-				effectiveness,
-			});
-		} else if (effectiveness > 0) {
-			resistantTo.push({
-				type,
-				effectiveness,
-			});
-		} else {
-			immuneTo.push({
-				type,
-				effectiveness,
-			});
+	const abilityText = [];
+	typeEffectiveness.forEach((item) => {
+		if (item.type === 'ability') abilityText.push(item);
+		else {
+			const {
+				multiplier,
+			} = item;
+
+			if (multiplier >= 1) weakTo.push(item);
+			else if (multiplier === 1) damagedNormallyBy.push(item);
+			else if (multiplier > 0) resistantTo.push(item);
+			else immuneTo.push(item);
 		}
-	}
+	});
 
 	return (
 		<div className="type-effect-display">
@@ -105,15 +106,17 @@ const TypeEffectivenessComponent = (props) => {
 						<>
 							{damagedNormallyBy.map((typeEffect) => {
 								const {
-									type,
+									name,
+									multiplier,
 								} = typeEffect;
+
 								return (
-									<div className="type-effect" style={{ backgroundColor: typeColourObj[type] }} key={type}>
+									<div className="type-effect" style={{ backgroundColor: typeColourObj[name] }} key={name}>
 										<div className="type-name">
-											{type}
+											{name}
 										</div>
 										<div className="type-effectiveness">
-											{`${typeEffect.effectiveness}x`}
+											{`${multiplier}x`}
 										</div>
 									</div>
 								);
@@ -135,19 +138,21 @@ const TypeEffectivenessComponent = (props) => {
 						<>
 							{weakTo.map((typeEffect) => {
 								const {
-									type,
+									name,
+									multiplier,
 								} = typeEffect;
+
 								return (
 									<div
-										key={type}
+										key={name}
 										className="type-effect"
-										style={{ backgroundColor: typeColourObj[type] }}
+										style={{ backgroundColor: typeColourObj[name] }}
 									>
 										<div className="type-name">
-											{type}
+											{name}
 										</div>
 										<div className="type-effectiveness">
-											{`${typeEffect.effectiveness}x`}
+											{`${multiplier}x`}
 										</div>
 									</div>
 								);
@@ -169,19 +174,21 @@ const TypeEffectivenessComponent = (props) => {
 						<>
 							{immuneTo.map((typeEffect) => {
 								const {
-									type,
+									name,
+									multiplier,
 								} = typeEffect;
+
 								return (
 									<div
-										key={type}
+										key={name}
 										className="type-effect"
-										style={{ backgroundColor: typeColourObj[type] }}
+										style={{ backgroundColor: typeColourObj[name] }}
 									>
 										<div className="type-name">
-											{type}
+											{name}
 										</div>
 										<div className="type-effectiveness">
-											{`${typeEffect.effectiveness}x`}
+											{`${multiplier}x`}
 										</div>
 									</div>
 								);
@@ -203,19 +210,21 @@ const TypeEffectivenessComponent = (props) => {
 						<>
 							{resistantTo.map((typeEffect) => {
 								const {
-									type,
+									name,
+									multiplier,
 								} = typeEffect;
+
 								return (
 									<div
-										key={type}
+										key={name}
 										className="type-effect"
-										style={{ backgroundColor: typeColourObj[type] }}
+										style={{ backgroundColor: typeColourObj[name] }}
 									>
 										<div className="type-name">
-											{type}
+											{name}
 										</div>
 										<div className="type-effectiveness">
-											{`${typeEffect.effectiveness}x`}
+											{`${multiplier}x`}
 										</div>
 									</div>
 								);
@@ -224,7 +233,20 @@ const TypeEffectivenessComponent = (props) => {
 					)}
 				</div>
 			</div>
-			<div className="type-effect-disclaimer">* Abilities may affect type effectiveness.</div>
+			<div className="type-effect-ability-container">
+				{abilityText.map((ability) => {
+					const {
+						name,
+						description,
+					} = ability;
+
+					return (
+						<div className="type-effect-ability-wrapper" key={name}>
+							{description}
+						</div>
+					);
+				})}
+			</div>
 		</div>
 	);
 };
@@ -291,8 +313,8 @@ SecondaryDisplay.propTypes = {
 	flavourText: PropTypes.string.isRequired,
 	statistics: PropTypes.array.isRequired,
 	activeDisplay: PropTypes.string.isRequired,
-	heightWeight: PropTypes.object.isRequired,
-	typeEffectiveness: PropTypes.object.isRequired,
+	heightWeight: PropTypes.array.isRequired,
+	typeEffectiveness: PropTypes.array.isRequired,
 	abilities: PropTypes.array.isRequired,
 };
 
@@ -305,11 +327,11 @@ StatisticsComponent.propTypes = {
 };
 
 HeightWeightComponent.propTypes = {
-	heightWeight: PropTypes.object.isRequired,
+	heightWeight: PropTypes.array.isRequired,
 };
 
 TypeEffectivenessComponent.propTypes = {
-	typeEffectiveness: PropTypes.object.isRequired,
+	typeEffectiveness: PropTypes.array.isRequired,
 };
 
 AbilitiesComponent.propTypes = {

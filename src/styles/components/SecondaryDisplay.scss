@@ -68,10 +68,17 @@
 	margin-right: 0.25rem;
 }
 
-.type-effect-disclaimer {
-	text-align: center;
+.type-effect-ability-container {
 	width: 100%;
-	margin-bottom: 0.6rem;
+	margin-top: 0.6rem;
+	padding-top: 0.6rem;
+	border-top: 1px solid #fff;
+}
+
+.type-effect-ability-wrapper {
+	margin-bottom: 0.4rem;	
+	font-size: 0.6rem;
+	line-height: 0.8rem;
 }
 
 .ability-container {
@@ -107,4 +114,9 @@
 	.ability-description {
 		font-size: 0.9rem;
 	}
+
+	.type-effect-disclaimer {
+		font-size: 0.84375rem;
+		line-height: 1rem;
+	}	
 }

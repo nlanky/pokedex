@@ -313,80 +313,100 @@ export default class Pokedex extends React.Component {
 			activeSecondaryDisplay,
 		} = this.state;
 
-		if (!dataReady) return <Wave />;
-
-		// Name
-		const pokemonName = speciesData.names.filter(name => name.language.name === language)[0].name;
-
-		// Types
-		const typeOne = typeData[0].name;
-		const typeTwoExists = typeof typeData[1] === 'object';
-		const typeTwo = typeTwoExists ? typeData[1].name : null;
-
-		// Abilities
+		// Declare variables for rendering
+		let pokemonName = '';
+		let typeOne = '';
+		let typeTwo = '';
 		let abilities = [];
-		for (let i = 0; i < abilityData.length; i++) {
-			const ability = abilityData[i];
-			abilities.push({
-				name: ability.names.filter(name => name.language.name === language)[0].name,
-				flavourText: selectAbilityFlavourText(ability.flavor_text_entries, language),
-				hidden: ability.hidden,
+		let typeEffectivenessObj = {};
+		let spriteObj = {};
+		let flavourText = '';
+		let displayLeftNumber = 0;
+		let displayRightNumber = 2;
+		let displayLeftCycle = false;
+		let displayRightCycle = false;
+		let displayTopCycle = false;
+		let displayBottomCycle = false;
+		let processedStatsArr = [];
+		let heightWeightArr = [];
+		if (dataReady) {
+			// Name
+			pokemonName = speciesData.names.filter(name => name.language.name === language)[0].name;
+
+			// Types
+			typeOne = typeData[0].name;
+			const typeTwoExists = typeof typeData[1] === 'object';
+			typeTwo = typeTwoExists ? typeData[1].name : null;
+
+			// Abilities
+			for (let i = 0; i < abilityData.length; i++) {
+				const ability = abilityData[i];
+				abilities.push({
+					name: ability.names.filter(name => name.language.name === language)[0].name,
+					flavourText: selectAbilityFlavourText(ability.flavor_text_entries, language),
+					hidden: ability.hidden,
+				});
+			}
+
+			// Type effectiveness
+			typeEffectivenessObj = generatePokemonTypeEffectiveness(typeData[0].damage_relations, typeTwoExists ? typeData[1].damage_relations : false, abilities);
+
+			// Sprites
+			spriteObj = baseData.sprites;
+
+			// Flavour text (description)
+			flavourText = selectSecondaryDisplayFlavourText(speciesData.flavor_text_entries, language);
+
+			// Sprite display
+			displayLeftNumber = pokedexNumber - 1;
+			displayRightNumber = pokedexNumber + 1;
+			displayLeftCycle = displayLeftNumber !== 0;
+			displayRightCycle = displayRightNumber !== maxPokedexNumber;
+			displayTopCycle = (activeSprite - 1) >= 0;
+			displayBottomCycle = (activeSprite + 1) <= 3;
+
+			// Statistics
+			const statsArr = baseData.stats;
+
+			// Sort statistics array to easily add name in correct language from statisticsData
+			// statRefArr is ordered by game index
+			const statRefArr = [
+				'hp',
+				'attack',
+				'defense',
+				'speed',
+				'special-attack',
+				'special-defense',
+			];
+			statRefArr.forEach((statName) => {
+				let found = false;
+				statsArr.filter((stat) => {
+					if (!found && stat.stat.name === statName) {
+						processedStatsArr.push(stat);
+						found = true;
+						return false;
+					}
+
+					return true;
+				});
 			});
+
+			statisticsData.forEach(function(value, index) {
+				this[index].name = value.names.filter(item => item.language.name === language)[0].name;
+			}, processedStatsArr);
+
+			// Height & Weight
+			heightWeightArr = [
+				{
+					'name': 'Height',
+					'value': baseData.height,
+				},
+				{
+					'name': 'Weight',
+					'value': baseData.weight,
+				},
+			];
 		}
-
-		// Type effectiveness
-		const typeEffectivenessObj = generatePokemonTypeEffectiveness(typeData[0].damage_relations, typeTwoExists ? typeData[1].damage_relations : false, abilities);
-
-		// Sprites
-		const spriteObj = baseData.sprites;
-
-		// Flavour text (description)
-		const flavourText = selectSecondaryDisplayFlavourText(speciesData.flavor_text_entries, language);
-
-		// Sprite display
-		const displayLeftNumber = pokedexNumber - 1;
-		const displayRightNumber = pokedexNumber + 1;
-		const displayLeftCycle = displayLeftNumber !== 0;
-		const displayRightCycle = displayRightNumber !== maxPokedexNumber;
-		const displayTopCycle = (activeSprite - 1) >= 0;
-		const displayBottomCycle = (activeSprite + 1) <= 3;
-
-		// Statistics
-		const statsArr = baseData.stats;
-
-		// Sort statistics array to easily add name in correct language from statisticsData
-		// statRefArr is ordered by game index
-		const statRefArr = [
-			'hp',
-			'attack',
-			'defense',
-			'speed',
-			'special-attack',
-			'special-defense',
-		];
-		const processedStatsArr = [];
-		statRefArr.forEach((statName) => {
-			let found = false;
-			statsArr.filter((stat) => {
-				if (!found && stat.stat.name === statName) {
-					processedStatsArr.push(stat);
-					found = true;
-					return false;
-				}
-
-				return true;
-			});
-		});
-
-		statisticsData.forEach(function(value, index) {
-			this[index].name = value.names.filter(item => item.language.name === language)[0].name;
-		}, processedStatsArr);
-
-		// Height & Weight
-		const heightWeightObj = {
-			height: baseData.height,
-			weight: baseData.weight,
-		};
 
 		return(
 			<div className="container">
@@ -410,44 +430,52 @@ export default class Pokedex extends React.Component {
 						<div className="main-display-wrapper">
 							<div className="main-display-cut" />
 							<div className="sprite-container">
-								<div className="sprite-top">
-									<div className="sprite-cycle top" onClick={this.onPrevSpriteClick}>
-										{displayTopCycle && 
-											<FaChevronUp color="#fff" />
-										}
+								{!dataReady ? (
+									<div className="flex-center">
+										<Wave color="#fff" />
 									</div>
-								</div>
-								<div className="sprite-middle">
-									<div className="sprite-cycle left" onClick={this.onPrevPokemonClick}>
-										{displayLeftCycle &&
-											<>
-												<FaChevronLeft color="#fff" />
-												<span className="nav-number-text">#{displayLeftNumber}</span>
-											</>
-										}										
-									</div>
-									<div className="sprite-wrapper">
-										{Object.keys(spriteObj).map(function(spriteKey) {
-											const spriteUrl = spriteObj[spriteKey];
-											if (!spriteUrl) return;
+								) : (
+									<>
+										<div className="sprite-top">
+											<div className="sprite-cycle top" onClick={this.onPrevSpriteClick}>
+												{displayTopCycle && 
+													<FaChevronUp color="#fff" />
+												}
+											</div>
+										</div>
+										<div className="sprite-middle">
+											<div className="sprite-cycle left" onClick={this.onPrevPokemonClick}>
+												{displayLeftCycle &&
+													<>
+														<FaChevronLeft color="#fff" />
+														<span className="nav-number-text">#{displayLeftNumber}</span>
+													</>
+												}										
+											</div>
+											<div className="sprite-wrapper">
+												{Object.keys(spriteObj).map(function(spriteKey) {
+													const spriteUrl = spriteObj[spriteKey];
+													if (!spriteUrl) return;
 
-											return <Sprite spriteUrl={spriteUrl} spriteKey={spriteKey} activeSprite={spriteKey === spriteRefObj[activeSprite]} key={spriteKey} />;
-										})}
-									</div>
-									<div className="sprite-cycle right" onClick={this.onNextPokemonClick}>
-										{displayRightCycle &&
-											<FaChevronRight color="#fff" />
-										}
-										<span className="nav-number-text">#{displayRightNumber}</span>
-									</div>
-								</div>
-								<div className="sprite-bottom">
-									<div className="sprite-cycle bottom" onClick={this.onNextSpriteClick}>
-										{displayBottomCycle && 
-												<FaChevronDown color="#fff" />
-										}
-									</div>
-								</div>
+													return <Sprite spriteUrl={spriteUrl} spriteKey={spriteKey} activeSprite={spriteKey === spriteRefObj[activeSprite]} key={spriteKey} />;
+												})}
+											</div>
+											<div className="sprite-cycle right" onClick={this.onNextPokemonClick}>
+												{displayRightCycle &&
+													<FaChevronRight color="#fff" />
+												}
+												<span className="nav-number-text">#{displayRightNumber}</span>
+											</div>
+										</div>
+										<div className="sprite-bottom">
+											<div className="sprite-cycle bottom" onClick={this.onNextSpriteClick}>
+												{displayBottomCycle && 
+														<FaChevronDown color="#fff" />
+												}
+											</div>
+										</div>
+									</>
+								)}
 							</div>
 							<div className="main-display-footer">
 								<SpriteButton />
@@ -469,7 +497,13 @@ export default class Pokedex extends React.Component {
 									<SlimButton colour="#fff" noMargin />
 								</div>
 								<div className="left-screen-footer-row">
-									<NumberDisplay number={pokedexNumber} name={pokemonName} />
+									{!dataReady ? (
+										<div className="number-display-wrapper flex-center">
+											<Wave color="#fff" />
+										</div>
+									) : (
+										<NumberDisplay number={pokedexNumber} name={pokemonName} />
+									)}
 								</div>
 							</div>
 							<div className="left-screen-footer-right-col">
@@ -507,14 +541,20 @@ export default class Pokedex extends React.Component {
 					</div>
 					<div className="right-screen-content">
 						<div className="secondary-display-wrapper" id="secondary_display">
-							<SecondaryDisplay
-								activeDisplay={activeSecondaryDisplay}
-								flavourText={flavourText}
-								statistics={processedStatsArr}
-								heightWeight={heightWeightObj}
-								typeEffectiveness={typeEffectivenessObj}
-								abilities={abilities}
-							/>
+							{!dataReady ? (
+								<div className="flex-center">
+									<Wave color="#fff" />
+								</div>
+							) : (
+								<SecondaryDisplay
+									activeDisplay={activeSecondaryDisplay}
+									flavourText={flavourText}
+									statistics={processedStatsArr}
+									heightWeight={heightWeightArr}
+									typeEffectiveness={typeEffectivenessObj}
+									abilities={abilities}
+								/>
+							)}
 						</div>
 						<div className="grid-button-container">
 							<GridButton clickHandler={this.onGridButtonClick} screen="flavourText" />
@@ -545,12 +585,27 @@ export default class Pokedex extends React.Component {
 						</div>
 						<div className="type-display-container">
 							<div className="type-display-wrapper">
-								<TypeDisplay type={typeOne} />
+								{!dataReady ? (
+									<div className="flex-center">
+										<Wave color="#fff" />
+									</div>
+								) : (
+									<TypeDisplay type={typeOne} />
+								)}
 							</div>
 							<div className="type-display-wrapper">
-								{typeTwo &&
-									<TypeDisplay type={typeTwo} />
-								}
+								{!dataReady ? (
+									<div className="flex-center">
+										<Wave color="#fff" />
+									</div>
+								) : (
+									<>
+										{typeTwo &&
+											<TypeDisplay type={typeTwo} />
+										}
+									</>
+								)}
+
 							</div>
 						</div>
 					</div>
