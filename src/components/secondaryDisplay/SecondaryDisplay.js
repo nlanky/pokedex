@@ -84,7 +84,7 @@ const TypeEffectivenessComponent = (props) => {
 				multiplier,
 			} = item;
 
-			if (multiplier >= 1) weakTo.push(item);
+			if (multiplier > 1) weakTo.push(item);
 			else if (multiplier === 1) damagedNormallyBy.push(item);
 			else if (multiplier > 0) resistantTo.push(item);
 			else immuneTo.push(item);
