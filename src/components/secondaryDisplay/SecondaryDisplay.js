@@ -233,20 +233,22 @@ const TypeEffectivenessComponent = (props) => {
 					)}
 				</div>
 			</div>
-			<div className="type-effect-ability-container">
-				{abilityText.map((ability) => {
-					const {
-						name,
-						description,
-					} = ability;
+			{abilityText.length > 0 && (
+				<div className="type-effect-ability-container">
+					{abilityText.map((ability) => {
+						const {
+							name,
+							description,
+						} = ability;
 
-					return (
-						<div className="type-effect-ability-wrapper" key={name}>
-							{description}
-						</div>
-					);
-				})}
-			</div>
+						return (
+							<div className="type-effect-ability-wrapper" key={name}>
+								{description}
+							</div>
+						);
+					})}
+				</div>
+			)}
 		</div>
 	);
 };
