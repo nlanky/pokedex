@@ -285,6 +285,52 @@ const AbilitiesComponent = (props) => {
 	);
 };
 
+const EncountersComponent = (props) => {
+	const {
+		encounters,
+	} = props;
+
+	return encounters.map((generation) => {
+		if (generation.data.length === 0) return null;
+
+		return (
+			<div className="encounter-container" key={generation.generation}>
+				<div>
+					{`Generation ${generation.generation}`}
+				</div>
+				<div className="encounter-header">
+					<div>Location</div>
+					<div>Game</div>
+					<div>Method</div>
+					<div>Levels</div>
+					<div>Chance</div>
+					<div>Conditions</div>
+				</div>
+				{generation.data.map((item) => {
+					return (
+						<div className="encounter-wrapper" key={item.key}>
+							<div>{item.location}</div>
+							<div>{item.game}</div>
+							<div>{item.method}</div>
+							<div>{item.level}</div>
+							<div>{item.chance}</div>
+							<div>
+								{item.conditions.map((condition) => {
+									return (
+										<div key={condition.key}>
+											{condition}
+										</div>
+									);
+								})}
+							</div>
+						</div>
+					);
+				})}
+			</div>
+		);
+	});
+};
+
 const SecondaryDisplay = (props) => {
 	const {
 		flavourText,
@@ -292,6 +338,7 @@ const SecondaryDisplay = (props) => {
 		heightWeight,
 		typeEffectiveness,
 		abilities,
+		encounters,
 		activeDisplay,
 	} = props;
 
@@ -306,6 +353,8 @@ const SecondaryDisplay = (props) => {
 			return <TypeEffectivenessComponent typeEffectiveness={typeEffectiveness} />;
 		case 'abilities':
 			return <AbilitiesComponent abilities={abilities} />;
+		case 'encounters':
+			return <EncountersComponent encounters={encounters} />;
 		default:
 			return null;
 	}
@@ -318,6 +367,7 @@ SecondaryDisplay.propTypes = {
 	heightWeight: PropTypes.array.isRequired,
 	typeEffectiveness: PropTypes.array.isRequired,
 	abilities: PropTypes.array.isRequired,
+	encounters: PropTypes.array.isRequired,
 };
 
 FlavourTextComponent.propTypes = {
@@ -338,6 +388,10 @@ TypeEffectivenessComponent.propTypes = {
 
 AbilitiesComponent.propTypes = {
 	abilities: PropTypes.array.isRequired,
+};
+
+EncountersComponent.propTypes = {
+	encounters: PropTypes.array.isRequired,
 };
 
 export default SecondaryDisplay;

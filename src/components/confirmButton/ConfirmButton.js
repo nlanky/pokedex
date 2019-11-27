@@ -11,9 +11,7 @@ const ConfirmButton = (props) => {
 		clickHandler();
 	};
 
-	const onKeyDown = () => {
-		return;
-	};
+	const onKeyDown = () => {};
 
 	return (
 		<div

@@ -8,6 +8,7 @@ import {
 	generatePokemonTypeEffectiveness,
 	selectSecondaryDisplayFlavourText,
 	selectAbilityFlavourText,
+	importPokemonCry,
 } from '../../utils/common';
 
 import '../../styles/app.scss';
@@ -38,23 +39,26 @@ const spriteRefObj = {
 const maxPokedexNumber = 807;
 
 export default class Pokedex extends React.Component {
-	state = {
-		pokemonApiUrl: 'https://pokeapi.co/api/v2/pokemon/',
-		cryUrl: '',
-		pokedexNumber: 1,
-		baseData: [],
-		speciesData: [],
-		typeData: [],
-		encounterData: [],
-		abilityData: [],
-		evolutionData: [],
-		statisticsData: [],
-		dataReady: false,
-		activeSprite: 0,
-		language: 'en',
-		activeSecondaryDisplay: 'flavourText',
-		cache: {},
-	};
+	constructor(props) {
+		super(props);
+		this.pokemonCry = new Audio();
+		this.state = {
+			pokemonApiUrl: 'https://pokeapi.co/api/v2/pokemon/',
+			pokedexNumber: 1,
+			baseData: [],
+			speciesData: [],
+			typeData: [],
+			encounterData: [],
+			abilityData: [],
+			evolutionData: [],
+			statisticsData: [],
+			dataReady: false,
+			activeSprite: 0,
+			language: 'en',
+			activeSecondaryDisplay: 'flavourText',
+			cache: {},			
+		};
+	}
 
 	componentDidMount() {
 		this.getData();
@@ -192,6 +196,9 @@ export default class Pokedex extends React.Component {
 			cache[pokedexNumberToGet].evolutionData = evolutionData;
 		}
 
+		// Set source for Pokemon cry, requires import (importPokemonCry)
+		this.pokemonCry.src = await importPokemonCry(pokedexNumberToGet).then((a) => a.default);
+
 		this.setState({
 			baseData,
 			speciesData,
@@ -209,7 +216,10 @@ export default class Pokedex extends React.Component {
 	onNextPokemonClick = () => {
 		const {
 			pokedexNumber,
+			dataReady,
 		} = this.state;
+
+		if (!dataReady) return;
 
 		const nextPokedexNumber = pokedexNumber + 1;
 		if (nextPokedexNumber > maxPokedexNumber) return;
@@ -226,7 +236,10 @@ export default class Pokedex extends React.Component {
 	onPrevPokemonClick = () => {
 		const {
 			pokedexNumber,
+			dataReady,
 		} = this.state;
+
+		if (!dataReady) return;
 
 		const prevPokedexNumber = pokedexNumber - 1;
 		if (prevPokedexNumber < 1) return;
@@ -243,7 +256,10 @@ export default class Pokedex extends React.Component {
 	onNextSpriteClick = () => {
 		const {
 			activeSprite,
+			dataReady,
 		} = this.state;
+
+		if (!dataReady) return;
 
 		const nextSpriteNumber = activeSprite + 1;
 		if (nextSpriteNumber > 3) return;
@@ -256,7 +272,10 @@ export default class Pokedex extends React.Component {
 	onPrevSpriteClick = () => {
 		const {
 			activeSprite,
+			dataReady,
 		} = this.state;
+
+		if (!dataReady) return;
 
 		const prevSpriteNumber = activeSprite - 1;
 		if (prevSpriteNumber < 0) return;
@@ -269,12 +288,24 @@ export default class Pokedex extends React.Component {
 	onGridButtonClick = (screen) => {
 		if (!screen) return;
 
+		const {
+			dataReady,
+		} = this.state;
+
+		if (!dataReady) return;
+
 		this.setState({
 			activeSecondaryDisplay: screen,
 		});
 	}
 
 	onConfirmButtonClick = () => {
+		const {
+			dataReady,
+		} = this.state;
+
+		if (!dataReady) return;
+
 		const randomNumber = Math.floor(Math.random() * (maxPokedexNumber - 1) + 1);
 		this.setState({
 			pokedexNumber: randomNumber,
@@ -285,13 +316,35 @@ export default class Pokedex extends React.Component {
 		this.getData(randomNumber);
 	}
 
+	onSpriteButtonClick = () => {
+		const {
+			dataReady,
+		} = this.state;
+
+		if (!dataReady) return;
+
+		this.pokemonCry.play();
+	}
+
 	scrollUp = () => {
+		const {
+			dataReady,
+		} = this.state;
+
+		if (!dataReady) return;
+
 		const secondaryDisplay = document.getElementById('secondary_display');
 		if (!secondaryDisplay) return;
 		secondaryDisplay.scrollTop -= 20;
 	}
 
 	scrollDown = () => {
+		const {
+			dataReady,
+		} = this.state;
+
+		if (!dataReady) return;
+
 		const secondaryDisplay = document.getElementById('secondary_display');
 		if (!secondaryDisplay) return;
 		secondaryDisplay.scrollTop += 20;
@@ -329,6 +382,7 @@ export default class Pokedex extends React.Component {
 		let displayBottomCycle = false;
 		let processedStatsArr = [];
 		let heightWeightArr = [];
+		let encounterArr = [];
 		if (dataReady) {
 			// Name
 			pokemonName = speciesData.names.filter(name => name.language.name === language)[0].name;
@@ -406,6 +460,119 @@ export default class Pokedex extends React.Component {
 					'value': baseData.weight,
 				},
 			];
+
+			// Encounters
+			const processedEncounterData = [];
+			encounterData.forEach((item) => {
+				item.version_details.forEach((encounter) => {
+					encounter.encounter_details.forEach((details) => {
+						let encounterToAdd = {
+							location: item.location_area.name,
+							game: encounter.version.name,
+							method: details.method.name,
+							chance: details.chance,
+						};
+
+						const levelRange = details.min_level === details.max_level ? details.max_level : `${details.min_level} - ${details.max_level}`;
+						encounterToAdd.level = levelRange;
+
+						const conditionArr = [];
+						details.condition_values.forEach((condition) => {
+							conditionArr.push(condition.name);
+						});
+						
+						encounterToAdd.conditions = conditionArr;
+						processedEncounterData.push(encounterToAdd);
+					});
+				});
+			});
+
+			const generationOneData = [];
+			const generationTwoData = [];
+			const generationThreeData = [];
+			const generationFourData = [];
+			const generationFiveData = [];
+			const generationSixData = [];
+			const generationSevenData = [];
+			processedEncounterData.forEach((encounter) => {
+				switch(encounter.game) {
+					case 'red':
+					case 'blue':
+					case 'yellow':
+						generationOneData.push(encounter);
+						break;
+					case 'gold':
+					case 'silver':
+					case 'crystal':
+						generationTwoData.push(encounter);
+						break;
+					case 'ruby':
+					case 'sapphire':
+					case 'emerald':
+					case 'firered':
+					case 'leafgreen':
+						generationThreeData.push(encounter);
+						break;
+					case 'diamond':
+					case 'pearl':
+					case 'platinum':
+					case 'heartgold':
+					case 'soulsilver':
+						generationFourData.push(encounter);
+						break;
+					case 'black':
+					case 'white':
+					case 'black-2':
+					case 'white-2':
+						generationFiveData.push(encounter);
+						break;
+					case 'x':
+					case 'y':
+					case 'omega-ruby':
+					case 'alpha-sapphire':
+						generationSixData.push(encounter);
+						break;
+					case 'sun':
+					case 'moon':
+					case 'ultra-sun':
+					case 'ultra-moon':
+						generationSevenData.push(encounter);
+						break;
+					default:
+						break;
+				}
+			});
+
+			encounterArr = [
+				{
+					generation: 1,
+					data: generationOneData,
+				},
+				{
+					generation: 2,
+					data: generationTwoData,
+				},
+				{
+					generation: 3,
+					data: generationThreeData,
+				},
+				{
+					generation: 4,
+					data: generationFourData,
+				},
+				{
+					generation: 5,
+					data: generationFiveData,
+				},
+				{
+					generation: 6,
+					data: generationSixData,
+				},
+				{
+					generation: 7,
+					data: generationSevenData,
+				},
+			];
 		}
 
 		return(
@@ -455,7 +622,7 @@ export default class Pokedex extends React.Component {
 											<div className="sprite-wrapper">
 												{Object.keys(spriteObj).map(function(spriteKey) {
 													const spriteUrl = spriteObj[spriteKey];
-													if (!spriteUrl) return;
+													if (!spriteUrl) return null;
 
 													return <Sprite spriteUrl={spriteUrl} spriteKey={spriteKey} activeSprite={spriteKey === spriteRefObj[activeSprite]} key={spriteKey} />;
 												})}
@@ -478,7 +645,7 @@ export default class Pokedex extends React.Component {
 								)}
 							</div>
 							<div className="main-display-footer">
-								<SpriteButton />
+								<SpriteButton clickHandler={this.onSpriteButtonClick} />
 								<div className="vent-container">
 									<Vent />
 									<Vent />
@@ -553,6 +720,7 @@ export default class Pokedex extends React.Component {
 									heightWeight={heightWeightArr}
 									typeEffectiveness={typeEffectivenessObj}
 									abilities={abilities}
+									encounters={encounterArr}
 								/>
 							)}
 						</div>
@@ -562,7 +730,7 @@ export default class Pokedex extends React.Component {
 							<GridButton clickHandler={this.onGridButtonClick} screen="heightWeight" />
 							<GridButton clickHandler={this.onGridButtonClick} screen="typeEffectiveness" />
 							<GridButton clickHandler={this.onGridButtonClick} screen="abilities" />
-							<GridButton clickHandler={this.onGridButtonClick} />
+							<GridButton clickHandler={this.onGridButtonClick} screen="encounters" />
 							<GridButton clickHandler={this.onGridButtonClick} />
 							<GridButton clickHandler={this.onGridButtonClick} />
 							<GridButton clickHandler={this.onGridButtonClick} />

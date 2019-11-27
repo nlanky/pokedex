@@ -12,9 +12,7 @@ const GridButton = (props) => {
 		clickHandler(screen);
 	};
 
-	const onKeyDown = () => {
-		return;
-	};
+	const onKeyDown = () => {};
 
 	return (
 		<div

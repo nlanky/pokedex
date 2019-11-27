@@ -84,6 +84,7 @@
 .ability-container {
 	display: flex;
 	flex-wrap: wrap;
+	width: 100%;
 }
 
 .ability-wrapper {
@@ -97,6 +98,18 @@
 
 .ability-description {
 	font-size: 0.6rem;
+}
+
+.encounter-container {
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+}
+
+.encounter-header, .encounter-wrapper {
+	display: flex;
+	flex-direction: row;
+	justify-content: space-between;
 }
 
 @media only screen and (min-width: 500px) {

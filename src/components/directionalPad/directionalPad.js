@@ -10,8 +10,7 @@ const DirectionalPad = (props) => {
 		leftAction,
 	} = props;
 
-	const handleKeyPress = () => {
-	}
+	const handleKeyPress = () => {};
 
 	return (
 		<div className="dpad-wrapper">

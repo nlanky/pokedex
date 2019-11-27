@@ -223,8 +223,20 @@ const selectAbilityFlavourText = (flavourTextArr, language) => {
 	return sortedFlavourTextArr[0].flavor_text;
 };
 
+const importPokemonCry = (pokedexNumber) => {
+	if (!pokedexNumber)
+		return import(
+			/* webpackMode: "lazy" */ `../assets/pokemon-cries/unknown.ogg`
+		);
+
+	return import(
+		/* webpackMode: "lazy" */ `../assets/pokemon-cries/${pokedexNumber}.ogg`
+	);	
+};
+
 export {
 	generatePokemonTypeEffectiveness,
 	selectSecondaryDisplayFlavourText,
 	selectAbilityFlavourText,
+	importPokemonCry,
 };
