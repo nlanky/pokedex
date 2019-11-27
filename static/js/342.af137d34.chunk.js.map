@@ -1,0 +1,1 @@
+{"version":3,"sources":["assets/pokemon-cries/404.ogg"],"names":["module","exports"],"mappings":"yFAAAA,EAAOC,QAAU,IAA0B","file":"static/js/342.af137d34.chunk.js","sourcesContent":["module.exports = __webpack_public_path__ + \"static/media/404.2f5a180d.ogg\";"],"sourceRoot":""}
