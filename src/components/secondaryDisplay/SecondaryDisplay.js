@@ -306,18 +306,18 @@ const EncountersComponent = (props) => {
 					<div>Chance</div>
 					<div>Conditions</div>
 				</div>
-				{generation.data.map((item) => {
+				{generation.data.map((item, index) => {
 					return (
-						<div className="encounter-wrapper" key={item.key}>
+						<div className="encounter-wrapper" key={index}>
 							<div>{item.location}</div>
-							<div>{item.game}</div>
+							<div>{item.version}</div>
 							<div>{item.method}</div>
-							<div>{item.level}</div>
-							<div>{item.chance}</div>
+							<div>{item.levels}</div>
+							<div>{`${item.chance}%`}</div>
 							<div>
-								{item.conditions.map((condition) => {
+								{item.conditions.map((condition, index) => {
 									return (
-										<div key={condition.key}>
+										<div key={index}>
 											{condition}
 										</div>
 									);
@@ -331,6 +331,78 @@ const EncountersComponent = (props) => {
 	});
 };
 
+const EvolutionChainComponent = (props) => {
+	const {
+		evolutionChain,
+	} = props;
+
+	const Evolution = (evoProps) => {
+		const {
+			evolution,
+		} = evoProps;
+
+		let evolutionStage = evolution.stage;
+		let evolutionStageText = 'Unevolved';
+		if (evolutionStage === 1) evolutionStageText = 'First Evolution';
+		if (evolutionStage === 2) evolutionStageText = 'Second Evolution';
+
+		return (
+			<div className="evolution-wrapper" key={evolution.name}>
+				<div className="evolution-sprite-wrapper">
+					<img
+						alt={`${evolution.name} sprite`}
+						src={evolution.sprite}
+					/>
+				</div>
+				<div>{evolution.name}</div>
+				<div>{evolutionStageText}</div>
+				{evolution.evolutionDetails.map((details, index) => <EvolutionDetails details={details} key={index} />)}
+			</div>
+		);
+	};
+
+	const EvolutionDetails = (detailProps) => {
+		const {
+			details,
+		} = detailProps;
+
+		const triggerName = details.trigger.name;
+		const level = details.min_level;
+		const showLevel = triggerName === 'level-up' && level;
+		const evolutionStone = details.item && details.item.name;
+		const heldItem = details.held_item && details.held_item.name;
+		const showFriendship = details.min_happiness;
+		const knownMove = details.known_move && details.known_move.name;
+		const knownMoveType = details.known_move_type && details.known_move_type.name;
+		const showLocation = details.location && details.location.name;
+		const showTimeOfDay = details.time_of_day.length !== 0;
+		const showGender = details.gender;
+		let genderText = 'Female';
+		if (showGender === 2) genderText = 'Male';
+
+
+		return (
+			<div className="evolution-details-wrapper">
+				{showLevel && <div>Level {level}</div>}
+				{evolutionStone && <div>{evolutionStone}</div>}
+				{heldItem && <div>{heldItem}</div>}
+				{showFriendship && <div>Friendship</div>}
+				{knownMove && <div>{knownMove}</div>}
+				{knownMoveType && <div>Knows {knownMoveType} move</div>}
+				{showLocation && <div>{showLocation}</div>}
+				{showTimeOfDay && <div>{details.time_of_day}</div>}
+				{showGender && <div>{genderText}</div>}
+			</div>
+		);
+	};
+
+	return (
+		<div className="evolution-chain-container">
+			{evolutionChain.map((evolution, index) => <Evolution evolution={evolution} key={index} noOfEvolution={index} />)}
+		</div>
+	);
+};
+
 const SecondaryDisplay = (props) => {
 	const {
 		flavourText,
@@ -339,6 +411,7 @@ const SecondaryDisplay = (props) => {
 		typeEffectiveness,
 		abilities,
 		encounters,
+		evolutionChain,
 		activeDisplay,
 	} = props;
 
@@ -355,6 +428,8 @@ const SecondaryDisplay = (props) => {
 			return <AbilitiesComponent abilities={abilities} />;
 		case 'encounters':
 			return <EncountersComponent encounters={encounters} />;
+		case 'evolutionChain':
+			return <EvolutionChainComponent evolutionChain={evolutionChain} />;
 		default:
 			return null;
 	}
@@ -368,6 +443,7 @@ SecondaryDisplay.propTypes = {
 	typeEffectiveness: PropTypes.array.isRequired,
 	abilities: PropTypes.array.isRequired,
 	encounters: PropTypes.array.isRequired,
+	evolutionChain: PropTypes.array.isRequired,
 };
 
 FlavourTextComponent.propTypes = {
@@ -392,6 +468,10 @@ AbilitiesComponent.propTypes = {
 
 EncountersComponent.propTypes = {
 	encounters: PropTypes.array.isRequired,
+};
+
+EvolutionChainComponent.propTypes = {
+	evolutionChain: PropTypes.array.isRequired,
 };
 
 export default SecondaryDisplay;
