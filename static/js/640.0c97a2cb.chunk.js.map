@@ -1,1 +1,0 @@
-{"version":3,"sources":["assets/pokemon-cries/673.ogg"],"names":["module","exports"],"mappings":"yFAAAA,EAAOC,QAAU,IAA0B","file":"static/js/640.0c97a2cb.chunk.js","sourcesContent":["module.exports = __webpack_public_path__ + \"static/media/673.34d5a352.ogg\";"],"sourceRoot":""}
