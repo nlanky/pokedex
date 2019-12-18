@@ -4,24 +4,32 @@ import '../../styles/app.scss';
 
 const NumberDisplay = (props) => {
 	const {
-		number,
-		name,
+		pokemonInput,
+		onPokemonInput,
+		onPokemonInputBlur,
+		onPokemonInputClick,
 	} = props;
-
-	const numberString = `#${number} ${name}`;
 
 	return (
 		<div className="number-display-wrapper">
-			<div className="number-display">
-				{numberString}
-			</div>
+			<input
+				className="number-display"
+				type="text"
+				value={pokemonInput}
+				onInput={onPokemonInput}
+				onChange={onPokemonInput}
+				onBlur={onPokemonInputBlur}
+				onClick={onPokemonInputClick}
+			/>
 		</div>
 	);
 };
 
 NumberDisplay.propTypes = {
-	number: PropTypes.number.isRequired,
-	name: PropTypes.string.isRequired,
+	pokemonInput: PropTypes.string.isRequired,
+	onPokemonInput: PropTypes.func.isRequired,
+	onPokemonInputBlur: PropTypes.func.isRequired,
+	onPokemonInputClick: PropTypes.func.isRequired,
 };
 
 export default NumberDisplay;
