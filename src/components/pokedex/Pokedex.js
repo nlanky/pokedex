@@ -10,10 +10,12 @@ import {
 } from 'react-icons/fa';
 
 import {
+	maxPokedexNumber,
 	generatePokemonTypeEffectiveness,
 	selectSecondaryDisplayFlavourText,
 	selectAbilityFlavourText,
 	importPokemonCry,
+	isValidPokedexNumber,
 } from '../../utils/common';
 
 import '../../styles/app.scss';
@@ -39,9 +41,6 @@ const spriteRefObj = {
 	2: 'front_shiny',
 	3: 'back_shiny',
 };
-
-// Set this to last Pokemon in API index available
-const maxPokedexNumber = 807;
 
 export default class Pokedex extends React.Component {
 	constructor(props) {
@@ -101,7 +100,7 @@ export default class Pokedex extends React.Component {
 		if (!dataReady) return;
 
 		const nextPokedexNumber = pokedexNumber + 1;
-		if (nextPokedexNumber > maxPokedexNumber) return;
+		if (!isValidPokedexNumber(nextPokedexNumber)) return;
 
 		this.setState({
 			dataReady: false, // Add loading spinner
@@ -121,7 +120,7 @@ export default class Pokedex extends React.Component {
 		if (!dataReady) return;
 
 		const prevPokedexNumber = pokedexNumber - 1;
-		if (prevPokedexNumber < 1) return;
+		if (!isValidPokedexNumber(prevPokedexNumber)) return;
 
 		this.setState({
 			dataReady: false, // Add loading spinner
@@ -632,14 +631,14 @@ export default class Pokedex extends React.Component {
 		} = this.state;
 
 		// Search for a Pokedex number
-		if (!Number.isNaN(searchTerm)) {
+		if (isValidPokedexNumber(searchTerm)) {
 			this.getData(searchTerm, false);
 			return;
 		}
 
 		// Search for a Pokemon name
 		if (searchTerm.match(/[A-za-z]+/)) {
-			this.getData(false, searchTerm);
+			this.getData(false, searchTerm.toLowerCase());
 			return;
 		}
 
@@ -731,8 +730,8 @@ export default class Pokedex extends React.Component {
 			// Sprite display
 			displayLeftNumber = pokedexNumber - 1;
 			displayRightNumber = pokedexNumber + 1;
-			displayLeftCycle = displayLeftNumber !== 0;
-			displayRightCycle = displayRightNumber !== maxPokedexNumber;
+			displayLeftCycle = isValidPokedexNumber(displayLeftNumber);
+			displayRightCycle = isValidPokedexNumber(displayRightNumber);
 			displayTopCycle = (activeSprite - 1) >= 0;
 			displayBottomCycle = (activeSprite + 1) <= 3;
 

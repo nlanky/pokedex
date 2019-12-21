@@ -2,6 +2,8 @@ import typeArr from './types';
 import versionArr from './versions';
 import versionGroupArr from './versionGroups';
 
+const maxPokedexNumber = 807;
+
 const generatePokemonTypeEffectiveness = (typeOneDamageRelations, typeTwoDamageRelations, abilities) => {
 	const typeEffectivenessObj = {};
 	const typeEffectivenessArr = [];
@@ -234,9 +236,39 @@ const importPokemonCry = (pokedexNumber) => {
 	);	
 };
 
+/**
+ * Checks if provided integer/string is a valid Pokedex number
+ * @param {Number|String} number - Provided Pokedex number 
+ * @returns {Boolean} True if a valid Pokedex number, false otherwise
+ */
+const isValidPokedexNumber = (number) => {
+	// Catch undefined etc. 
+	if (!number) return false;
+
+	if (typeof number === 'string') {
+		// Remove any whitespace
+		number = number.trim();
+
+		// Removes leading zeros
+		number = number.replace(/^0+/, '');
+
+		// Catch blank string
+		if (number === '') return false;
+	}
+
+	// Convert to number and truncate decimals
+	var n = Math.floor(Number(number));
+	
+	// Checks number isn't infinity
+	// Checks number is between 1 and 807
+	return n !== Infinity && n > 0 && n <= maxPokedexNumber;
+}
+
 export {
+	maxPokedexNumber,
 	generatePokemonTypeEffectiveness,
 	selectSecondaryDisplayFlavourText,
 	selectAbilityFlavourText,
 	importPokemonCry,
+	isValidPokedexNumber,
 };
