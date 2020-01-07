@@ -9,6 +9,8 @@ import {
 	FaChevronDown,
 } from 'react-icons/fa';
 
+import Database from '../../utils/database';
+
 import {
 	generatePokemonTypeEffectiveness,
 	selectSecondaryDisplayFlavourText,
@@ -32,13 +34,17 @@ import Vent from '../vent';
 import SpriteButton from '../spriteButton';
 import PowerButton from '../powerButton';
 
-// Useful object to ensure order of sprites is correct
-const spriteRefObj = {
-	0: 'front_default',
-	1: 'back_default',
-	2: 'front_shiny',
-	3: 'back_shiny',
-};
+// Useful object to ensure preferred order of sprites is correct
+const spriteRef = [
+	'front_default',
+	'back_default',
+	'front_female',
+	'back_female',
+	'front_shiny',
+	'back_shiny',
+	'front_shiny_female',
+	'back_shiny_female',
+];
 
 // Set this to last Pokemon in API index available
 const maxPokedexNumber = 807;
@@ -46,10 +52,16 @@ const maxPokedexNumber = 807;
 export default class Pokedex extends React.Component {
 	constructor(props) {
 		super(props);
-		this.pokemonCry = new Audio();
 		this.state = {
+			database: new Database(),
 			apiUrl: 'https://pokeapi.co/api/v2/',
 			pokedexNumber: 1,
+			pokemonInput: '#1 Bulbasaur',
+			pokemonCry: new Audio(),
+			activeSprite: 0,
+			spriteArr: [],
+			activeSecondaryDisplay: 'flavourText',
+			language: 'en',
 			baseData: [],
 			speciesData: [],
 			typeData: [],
@@ -58,12 +70,6 @@ export default class Pokedex extends React.Component {
 			evolutionData: [],
 			statisticsData: [],
 			dataReady: false,
-			activeSprite: 0,
-			language: 'en',
-			activeSecondaryDisplay: 'flavourText',
-			pokemonCache: {},
-			rawDataCache: {},
-			pokemonInput: '#1 Bulbasaur',
 		};
 
 		// Binding methods
@@ -80,21 +86,32 @@ export default class Pokedex extends React.Component {
 		this.onPokemonInputClick = this.onPokemonInputClick.bind(this);
 		this.getRawData = this.getRawData.bind(this);
 		this.getData = this.getData.bind(this);
-		this.processedEncounterData = this.processedEncounterData.bind(this);
+		this.processEvolutionData = this.processEvolutionData.bind(this);
+		this.processEncounterData = this.processEncounterData.bind(this);
 		this.searchPokemon = this.searchPokemon.bind(this);
 		this.scrollUp = this.scrollUp.bind(this);
 		this.scrollDown = this.scrollDown.bind(this);
 	}
 
 	componentDidMount() {
-		// First load defaults to #1 (Bulbasaur)
-		this.getData(false, false);
+		const {
+			database,
+		} = this.state;
+
+		// Initialise DB
+		database.start().then(() => {
+			// First load defaults to #1 (Bulbasaur)
+			this.getData(false, false);
+		}, (e) => {
+			console.error(`Database couldn't be opened. Error: ${JSON.stringify(e)}`);
+		});
 	}
 
 	// Click handlers
 	onNextPokemonClick() {
 		const {
 			pokedexNumber,
+			pokemonCry,
 			dataReady,
 		} = this.state;
 
@@ -104,10 +121,15 @@ export default class Pokedex extends React.Component {
 		if (nextPokedexNumber > maxPokedexNumber) return;
 
 		this.setState({
-			dataReady: false, // Add loading spinner
 			pokedexNumber: nextPokedexNumber, // Update Pokedex number in state
+			pokemonInput: '',
+			activeSprite: 0,
+			spriteArr: [],
 			activeSecondaryDisplay: 'flavourText',
+			dataReady: false, // Add loading spinner
 		});
+
+		pokemonCry.removeAttribute('src');
 
 		this.getData(nextPokedexNumber, false);
 	}
@@ -115,6 +137,7 @@ export default class Pokedex extends React.Component {
 	onPrevPokemonClick() {
 		const {
 			pokedexNumber,
+			pokemonCry,
 			dataReady,
 		} = this.state;
 
@@ -124,10 +147,15 @@ export default class Pokedex extends React.Component {
 		if (prevPokedexNumber < 1) return;
 
 		this.setState({
-			dataReady: false, // Add loading spinner
 			pokedexNumber: prevPokedexNumber, // Update Pokedex number in state
+			pokemonInput: '',
+			activeSprite: 0,
+			spriteArr: [],
 			activeSecondaryDisplay: 'flavourText',
+			dataReady: false, // Add loading spinner
 		});
+
+		pokemonCry.removeAttribute('src');
 
 		this.getData(prevPokedexNumber, false);
 	}
@@ -135,13 +163,14 @@ export default class Pokedex extends React.Component {
 	onNextSpriteClick() {
 		const {
 			activeSprite,
+			spriteArr,
 			dataReady,
 		} = this.state;
 
 		if (!dataReady) return;
 
 		const nextSpriteNumber = activeSprite + 1;
-		if (nextSpriteNumber > 3) return;
+		if (nextSpriteNumber > (spriteArr.length - 1)) return;
 
 		this.setState({
 			activeSprite: nextSpriteNumber,
@@ -180,6 +209,7 @@ export default class Pokedex extends React.Component {
 
 	onConfirmButtonClick() {
 		const {
+			pokemonCry,
 			dataReady,
 		} = this.state;
 
@@ -188,9 +218,13 @@ export default class Pokedex extends React.Component {
 		const randomNumber = Math.floor(Math.random() * (maxPokedexNumber - 1) + 1);
 		this.setState({
 			pokedexNumber: randomNumber,
-			dataReady: false,
+			activeSprite: 0,
+			spriteArr: [],
 			activeSecondaryDisplay: 'flavourText',
+			dataReady: false,
 		});
+
+		pokemonCry.removeAttribute('src');
 
 		this.getData(randomNumber, false);
 	}
@@ -198,11 +232,12 @@ export default class Pokedex extends React.Component {
 	onSpriteButtonClick() {
 		const {
 			dataReady,
+			pokemonCry,
 		} = this.state;
 
 		if (!dataReady) return;
 
-		this.pokemonCry.play();
+		pokemonCry.play();
 	}
 
 	onKeyDown() {};
@@ -216,13 +251,18 @@ export default class Pokedex extends React.Component {
 		if (event.key === 'Enter') {
 			const {
 				pokedexNumber,
+				pokemonCry,
 			} = this.state;
 
 			this.setState({
 				pokedexNumber,
-				dataReady: false,
+				pokemonInput: '',
+				activeSprite: 0,
+				spriteArr: [],
 				activeSecondaryDisplay: 'flavourText',
+				dataReady: false,
 			});
+			pokemonCry.removeAttribute('src');
 			this.searchPokemon(value);
 			return;
 		}
@@ -236,13 +276,18 @@ export default class Pokedex extends React.Component {
 		event.preventDefault();
 		const {
 			pokedexNumber,
+			pokemonCry,
 		} = this.state;
 
 		this.setState({
 			pokedexNumber,
-			dataReady: false,
+			pokemonInput: '',
+			activeSprite: 0,
+			spriteArr: [],
 			activeSecondaryDisplay: 'flavourText',
+			dataReady: false,
 		});
+		pokemonCry.removeAttribute('src');
 		this.searchPokemon(event.target.value);
 	}
 
@@ -254,7 +299,7 @@ export default class Pokedex extends React.Component {
 	}
 
 	/**
-	 * Fetches raw data from cache or API. If fetching from API, saves to cache too.
+	 * Fetches raw data from DB or API. If fetching from API, inserts into DB too.
 	 * @param {Number} id - Unique identifier from API
 	 * @param {String} type - API endpoint
 	 * @param {Boolean} isEncounterData - Adjust for different endpoint format
@@ -262,282 +307,208 @@ export default class Pokedex extends React.Component {
 	 */
 	async getRawData(id, type, isEncounterData) {
 		const {
+			database,
 			apiUrl,
-			rawDataCache,
 		} = this.state;
 
-		// Check if we have the response already cached
-		if (rawDataCache[type] && rawDataCache[type][id]) {
-			const cachedData = rawDataCache[type][id];
+		// Ensure id is an integer, string/integer treated as different keys in DB
+		const idInt = Number(id);
 
+		// Check if we have the response already in the DB
+		let dbData = null;
+		await database.readTransaction(type, idInt).then((data) => {
+			if (data) dbData = data;
+		});
+
+		if (dbData) {
 			// Encounter endpoint is in format /pokemon/[id]/encounters
-			if (isEncounterData && typeof cachedData.location_area_encounters !== 'string') {
-				return cachedData.location_area_encounters;
+			if (isEncounterData && typeof dbData.location_area_encounters !== 'string') {
+				return dbData.location_area_encounters;
 			}
 
-			if (!isEncounterData) {
-				return cachedData;
-			}
+			if (!isEncounterData) return dbData;
 		}
 
-		// If data not in cache, need to make a request
+		// If data not in DB, need to make a request
 		if (isEncounterData) {
-			return axios.get(`${apiUrl}${type}/${id}/encounters`).then((response) => {
+			return axios.get(`${apiUrl}${type}/${idInt}/encounters`).then((response) => {
 				const responseData = response.data;
-				rawDataCache[type][id].location_area_encounters = responseData;
-				return responseData;
+				return database.updateTransaction(type, idInt, {
+					location_area_encounters: responseData,
+				}).then(() => responseData);
 			});
 		}
 
-		return axios.get(`${apiUrl}${type}/${id}`).then((response) => {
+		return axios.get(`${apiUrl}${type}/${idInt}`).then((response) => {
 			const responseData = response.data;
-			if (typeof rawDataCache[type] === 'undefined') rawDataCache[type] = {};
-			rawDataCache[type][id] = responseData;
-			return responseData;
+			return database.createTransaction(type, responseData).then(() => responseData);
 		});
 	}
 
 	/**
 	 * Gets data on Pokemon using provided Pokedex number or Pokemon name
-	 * Also caches data of Pokemon
 	 * @param {Number} id - Pokedex number
 	 * @param {String} name - Pokemon name
 	 */
 	async getData(id, name) {
 		const {
 			pokedexNumber,
-			pokemonCache,
+			pokemonCry,
 			language,
 		} = this.state;
 
 		let baseData = [];
 		let speciesData = [];
-		let typeData = [];
+		const typeData = [];
 		let encounterData = [];
-		let abilityData = [];
+		const abilityData = [];
 		let evolutionData = [];
-		let statisticsData = [];
+		const statisticsData = [];
+		const spriteArr = [];
 
 		let pokemonToGet = pokedexNumber;
 		if (id) {
 			pokemonToGet = id;
 		} else if (name) {
-			pokemonToGet = name;
+			try {
+				baseData = await this.getRawData(name, 'pokemon', false);
+				pokemonToGet = baseData.id;
+			} catch(e) {
+				console.log(`getData -> Error: ${JSON.stringify(e)}`);
+				alert('Error fetching Pokemon data. Please check the Pokemon name entered.');
+
+				// If we fail to get data, revert back to current Pokemon
+				this.getData(pokedexNumber, false);
+			}
 		}
 
 		try {
-			// Use cache if available
-			if (pokemonCache[pokemonToGet]) {
-				const cacheEntry = pokemonCache[pokemonToGet];
-				baseData = cacheEntry.baseData;
-				speciesData = cacheEntry.speciesData;
-				typeData = cacheEntry.typeData;
-				encounterData = cacheEntry.encounterData;
-				abilityData = cacheEntry.abilityData;
-				evolutionData = cacheEntry.evolutionData;
-				statisticsData = cacheEntry.statisticsData;
-			} else {
-				// First, get the base Pokemon data
-				baseData = await this.getRawData(pokemonToGet, 'pokemon', false);
-				pokemonToGet = baseData.id;
+			// First, get the base Pokemon data
+			baseData = await this.getRawData(pokemonToGet, 'pokemon', false);
 
-				const speciesUrlArr = baseData.species.url.split('/');
-
-				// Use base data to make requests to other API endpoints
-				const baseDataPromises = [
-					this.getRawData(speciesUrlArr[speciesUrlArr.length - 2], 'pokemon-species', false),
-					this.getRawData(pokemonToGet, 'pokemon', true),
-					this.getRawData(1, 'stat', false),
-					this.getRawData(2, 'stat', false),
-					this.getRawData(3, 'stat', false),
-					this.getRawData(4, 'stat', false),
-					this.getRawData(5, 'stat', false),
-					this.getRawData(6, 'stat', false),
-				];
-
-				// Pokemon may have 1 or 2 types
-				const typeArr = baseData.types.sort((a, b) => a.slot - b.slot);
-				const typeOneUrlArr = typeArr[0].type.url.split('/');
-				baseDataPromises.push(this.getRawData(typeOneUrlArr[typeOneUrlArr.length - 2], 'type', false));
-				if (typeArr[1]) {
-					const typeTwoUrlArr = typeArr[1].type.url.split('/');
-					baseDataPromises.push(this.getRawData(typeTwoUrlArr[typeTwoUrlArr.length - 2], 'type', false));
-				}
-
-				// Pokemon may have up to 3 abilities
-				const abilityArr = baseData.abilities.sort((a, b) => a.slot - b.slot);
-				const abilityOneUrlArr = abilityArr[0].ability.url.split('/');
-				baseDataPromises.push(this.getRawData(abilityOneUrlArr[abilityOneUrlArr.length - 2], 'ability', false));
-				if (abilityArr[1]) {
-					const abilityTwoUrlArr = abilityArr[1].ability.url.split('/');
-					baseDataPromises.push(this.getRawData(abilityTwoUrlArr[abilityTwoUrlArr.length - 2], 'ability', false));
-					if (abilityArr[2]) {
-						const abilityThreeUrlArr = abilityArr[2].ability.url.split('/');
-						baseDataPromises.push(this.getRawData(abilityThreeUrlArr[abilityThreeUrlArr.length - 2], 'ability', false));
-					}
-				}
-
-				// Can make these requests synchronously, only relying on base data
-				await Promise.all(baseDataPromises).then((res) => {
-					speciesData = res[0];
-					encounterData = res[1];
-					statisticsData.push(
-						res[2],
-						res[3],
-						res[4],
-						res[5],
-						res[6],
-						res[7],
-					);
-					typeData.push(res[8]);
-
-					const noOfTypes = typeArr.length;
-					const noOfAbilities = abilityArr.length;
-					if (noOfTypes === 1) {
-						switch (noOfAbilities) {
-							case 1:
-								abilityData.push(res[9]);
-								break;
-							case 2:
-								abilityData.push(res[9]);
-								abilityData.push(res[10]);
-								break;
-							case 3:
-								abilityData.push(res[9]);
-								abilityData.push(res[10]);
-								abilityData.push(res[11]);
-								break;
-							default:
-								break;
-						}
-					} else {
-						typeData.push(res[9]);
-						switch (noOfAbilities) {
-							case 1:
-								abilityData.push(res[10]);
-								break;
-							case 2:
-								abilityData.push(res[10]);
-								abilityData.push(res[11]);
-								break;
-							case 3:
-								abilityData.push(res[10]);
-								abilityData.push(res[11]);
-								abilityData.push(res[12]);
-								break;
-							default:
-								break;
-						}
-					}
-
-					// Add hidden property to ability data
-					abilityData.forEach(function (ability, index) {
-						this[index].hidden = abilityArr[index].is_hidden;
-					}, abilityData);
-
-					// Sort statistics by game index
-					statisticsData.sort((a, b) => {
-						if (a.game_index > b.game_index) return 1;
-						if (a.game_index < b.game_index) return -1;
-						return 0;
-					});
-
-					pokemonCache[pokemonToGet] = {
-						baseData,
-						speciesData,
-						typeData,
-						encounterData,
-						abilityData,
-						statisticsData,
-					}
-				});
-
-				// After we have species data, we can get evolution line data
-				const evolutionUrlArr = speciesData.evolution_chain.url.split('/');
-				const rawEvolutionData = await this.getRawData(evolutionUrlArr[evolutionUrlArr.length - 2], 'evolution-chain', false);
-
-				// Process evolution data
-				const evoChainData = rawEvolutionData.chain;
-
-				// Get name and sprite of evolution from API
-				let evoSpeciesUrlArr = evoChainData.species.url.split('/');
-				let rawEvoSpeciesData = await this.getRawData(evoSpeciesUrlArr[evoSpeciesUrlArr.length - 2], 'pokemon-species', false);
-				let evoBaseUrlArr = rawEvoSpeciesData.varieties[0].pokemon.url.split('/');
-				let rawEvoBaseData = await this.getRawData(evoBaseUrlArr[evoBaseUrlArr.length - 2], 'pokemon', false);
-
-				evolutionData.push({
-					name: rawEvoSpeciesData.names.filter((name) => name.language.name === language)[0].name,
-					sprite: rawEvoBaseData.sprites.front_default,
-					stage: 0,
-					evolutionDetails: evoChainData.evolution_details,
-				});
-
-				const firstStageEvolutions = evoChainData.evolves_to;
-				for (let i = 0; i < firstStageEvolutions.length; i += 1) {
-					const firstStageEvolution = firstStageEvolutions[i];
-
-					// Get name and sprite of evolution from API
-					evoSpeciesUrlArr = firstStageEvolution.species.url.split('/');
-					rawEvoSpeciesData = await this.getRawData(evoSpeciesUrlArr[evoSpeciesUrlArr.length - 2], 'pokemon-species', false);
-					evoBaseUrlArr = rawEvoSpeciesData.varieties[0].pokemon.url.split('/');
-					rawEvoBaseData = await this.getRawData(evoBaseUrlArr[evoBaseUrlArr.length - 2], 'pokemon', false);
-
-					evolutionData.push({
-						name: rawEvoSpeciesData.names.filter((name) => name.language.name === language)[0].name,
-						sprite: rawEvoBaseData.sprites.front_default,
-						stage: 1,
-						evolutionDetails: firstStageEvolution.evolution_details,
-					});
-
-					const secondStageEvolutions = firstStageEvolution.evolves_to;
-					for (let j = 0; j < secondStageEvolutions.length; j += 1) {
-						const secondStageEvolution = secondStageEvolutions[j];
-
-						// Get name and sprite of evolution from API
-						evoSpeciesUrlArr = secondStageEvolution.species.url.split('/');
-						rawEvoSpeciesData = await this.getRawData(evoSpeciesUrlArr[evoSpeciesUrlArr.length - 2], 'pokemon-species', false);
-						evoBaseUrlArr = rawEvoSpeciesData.varieties[0].pokemon.url.split('/');
-						rawEvoBaseData = await this.getRawData(evoBaseUrlArr[evoBaseUrlArr.length - 2], 'pokemon', false);
-
-						evolutionData.push({
-							name: rawEvoSpeciesData.names.filter((name) => name.language.name === language)[0].name,
-							sprite: rawEvoBaseData.sprites.front_default,
-							stage: 2,
-							evolutionDetails: secondStageEvolution.evolution_details,
-						});
-
-						const thirdStageEvolutions = secondStageEvolution.evolves_to;
-						for (let k = 0; k < thirdStageEvolutions.length; k += 1) {
-							const thirdStageEvolution = thirdStageEvolutions[k];
-
-							// Get name and sprite of evolution from API
-							evoSpeciesUrlArr = thirdStageEvolution.species.url.split('/');
-							rawEvoSpeciesData = await this.getRawData(evoSpeciesUrlArr[evoSpeciesUrlArr.length - 2], 'pokemon-species', false);
-							evoBaseUrlArr = rawEvoSpeciesData.varieties[0].pokemon.url.split('/');
-							rawEvoBaseData = await this.getRawData(evoBaseUrlArr[evoBaseUrlArr.length - 2], 'pokemon', false);
-
-							evolutionData.push({
-								name: rawEvoSpeciesData.names.filter((name) => name.language.name === language)[0].name,
-								sprite: rawEvoBaseData.sprites.front_default,
-								stage: 2,
-								evolutionDetails: thirdStageEvolution.evolution_details,
-							});
-						}
-					}
-				}
-
-				evolutionData.babyTriggerItem = rawEvolutionData.baby_trigger_item;
-				pokemonCache[pokemonToGet].evolutionData = evolutionData;
+			// Add to sprite array from base response, only add non-null sprites
+			const spriteObj = baseData.sprites;
+			for (let i = 0; i < spriteRef.length; i += 1) {
+				const spriteName = spriteRef[i];
+				if (spriteObj[spriteName]) spriteArr.push(spriteObj[spriteName]);
 			}
 
+			const speciesUrlArr = baseData.species.url.split('/');
+
+			// Use base data to make requests to other API endpoints
+			const baseDataPromises = [
+				this.getRawData(speciesUrlArr[speciesUrlArr.length - 2], 'pokemon-species', false),
+				this.getRawData(pokemonToGet, 'pokemon', true),
+				this.getRawData(1, 'stat', false),
+				this.getRawData(2, 'stat', false),
+				this.getRawData(3, 'stat', false),
+				this.getRawData(4, 'stat', false),
+				this.getRawData(5, 'stat', false),
+				this.getRawData(6, 'stat', false),
+			];
+
+			// Pokemon may have 1 or 2 types
+			const typeArr = baseData.types.sort((a, b) => a.slot - b.slot);
+			const typeOneUrlArr = typeArr[0].type.url.split('/');
+			baseDataPromises.push(this.getRawData(typeOneUrlArr[typeOneUrlArr.length - 2], 'type', false));
+			if (typeArr[1]) {
+				const typeTwoUrlArr = typeArr[1].type.url.split('/');
+				baseDataPromises.push(this.getRawData(typeTwoUrlArr[typeTwoUrlArr.length - 2], 'type', false));
+			}
+
+			// Pokemon may have up to 3 abilities
+			const abilityArr = baseData.abilities.sort((a, b) => a.slot - b.slot);
+			const abilityOneUrlArr = abilityArr[0].ability.url.split('/');
+			baseDataPromises.push(this.getRawData(abilityOneUrlArr[abilityOneUrlArr.length - 2], 'ability', false));
+			if (abilityArr[1]) {
+				const abilityTwoUrlArr = abilityArr[1].ability.url.split('/');
+				baseDataPromises.push(this.getRawData(abilityTwoUrlArr[abilityTwoUrlArr.length - 2], 'ability', false));
+				if (abilityArr[2]) {
+					const abilityThreeUrlArr = abilityArr[2].ability.url.split('/');
+					baseDataPromises.push(this.getRawData(abilityThreeUrlArr[abilityThreeUrlArr.length - 2], 'ability', false));
+				}
+			}
+
+			// Can make these requests synchronously, only relying on base data
+			await Promise.all(baseDataPromises).then((res) => {
+				speciesData = res[0];
+				encounterData = res[1];
+				statisticsData.push(
+					res[2],
+					res[3],
+					res[4],
+					res[5],
+					res[6],
+					res[7],
+				);
+				typeData.push(res[8]);
+
+				const noOfTypes = typeArr.length;
+				const noOfAbilities = abilityArr.length;
+				if (noOfTypes === 1) {
+					switch (noOfAbilities) {
+						case 1:
+							abilityData.push(res[9]);
+							break;
+						case 2:
+							abilityData.push(res[9]);
+							abilityData.push(res[10]);
+							break;
+						case 3:
+							abilityData.push(res[9]);
+							abilityData.push(res[10]);
+							abilityData.push(res[11]);
+							break;
+						default:
+							break;
+					}
+				} else {
+					typeData.push(res[9]);
+					switch (noOfAbilities) {
+						case 1:
+							abilityData.push(res[10]);
+							break;
+						case 2:
+							abilityData.push(res[10]);
+							abilityData.push(res[11]);
+							break;
+						case 3:
+							abilityData.push(res[10]);
+							abilityData.push(res[11]);
+							abilityData.push(res[12]);
+							break;
+						default:
+							break;
+					}
+				}
+
+				// Add hidden property to ability data
+				abilityData.forEach(function (ability, index) {
+					this[index].hidden = abilityArr[index].is_hidden;
+				}, abilityData);
+
+				// Sort statistics by game index
+				statisticsData.sort((a, b) => {
+					if (a.game_index > b.game_index) return 1;
+					if (a.game_index < b.game_index) return -1;
+					return 0;
+				});
+			});
+
+			// After we have species data, we can get evolution line data
+			const evolutionUrlArr = speciesData.evolution_chain.url.split('/');
+			const rawEvolutionData = await this.getRawData(evolutionUrlArr[evolutionUrlArr.length - 2], 'evolution-chain', false);
+			evolutionData = await this.processEvolutionData(rawEvolutionData);
+
 			// Set source for Pokemon cry, requires import (importPokemonCry)
-			this.pokemonCry.src = await importPokemonCry(pokemonToGet).then((a) => a.default);
+			const importedPokemonCry = await importPokemonCry(pokemonToGet).then((a) => a.default);
+			pokemonCry.src = importedPokemonCry;
 
 			// Process encounter data
-			encounterData = await this.processedEncounterData(encounterData);
+			encounterData = await this.processEncounterData(encounterData);
 
 			// Set Pokemon input value
-			const pokemonName = speciesData.names.filter((name) => name.language.name === language)[0].name;
+			const pokemonName = speciesData.names.filter((pokemonName) => pokemonName.language.name === language)[0].name;
 			const pokemonInput = `#${pokemonToGet} ${pokemonName}`;
 
 			this.setState({
@@ -551,10 +522,11 @@ export default class Pokedex extends React.Component {
 				statisticsData,
 				pokemonInput,
 				activeSprite: 0, // Always reset back to default image
+				spriteArr,
 				dataReady: true, // Remove loading spinner
 			});
 		} catch (e) {
-			console.log(`getData -> Error: ${JSON.stringify(e)}`);
+			console.error(`getData -> Error: ${JSON.stringify(e)}`);
 			alert('Error fetching Pokemon data');
 
 			// If we fail to get data, revert back to current Pokemon
@@ -562,7 +534,90 @@ export default class Pokedex extends React.Component {
 		}
 	}
 
-	async processedEncounterData(data) {
+	async processEvolutionData(data) {
+		const {
+			language,
+		} = this.state;
+
+		const {
+			chain,
+			baby_trigger_item,
+		} = data;
+
+		const processedData = [];
+
+		// Get name and sprite of evolution from API
+		let evoSpeciesUrlArr = chain.species.url.split('/');
+		let rawEvoSpeciesData = await this.getRawData(evoSpeciesUrlArr[evoSpeciesUrlArr.length - 2], 'pokemon-species', false);
+		let evoBaseUrlArr = rawEvoSpeciesData.varieties[0].pokemon.url.split('/');
+		let rawEvoBaseData = await this.getRawData(evoBaseUrlArr[evoBaseUrlArr.length - 2], 'pokemon', false);
+
+		processedData.push({
+			name: rawEvoSpeciesData.names.filter((name) => name.language.name === language)[0].name,
+			sprite: rawEvoBaseData.sprites.front_default,
+			stage: 0,
+			evolutionDetails: chain.evolution_details,
+		});
+
+		const firstStageEvolutions = chain.evolves_to;
+		for (let i = 0; i < firstStageEvolutions.length; i += 1) {
+			const firstStageEvolution = firstStageEvolutions[i];
+
+			// Get name and sprite of evolution from API
+			evoSpeciesUrlArr = firstStageEvolution.species.url.split('/');
+			rawEvoSpeciesData = await this.getRawData(evoSpeciesUrlArr[evoSpeciesUrlArr.length - 2], 'pokemon-species', false);
+			evoBaseUrlArr = rawEvoSpeciesData.varieties[0].pokemon.url.split('/');
+			rawEvoBaseData = await this.getRawData(evoBaseUrlArr[evoBaseUrlArr.length - 2], 'pokemon', false);
+
+			processedData.push({
+				name: rawEvoSpeciesData.names.filter((name) => name.language.name === language)[0].name,
+				sprite: rawEvoBaseData.sprites.front_default,
+				stage: 1,
+				evolutionDetails: firstStageEvolution.evolution_details,
+			});
+
+			const secondStageEvolutions = firstStageEvolution.evolves_to;
+			for (let j = 0; j < secondStageEvolutions.length; j += 1) {
+				const secondStageEvolution = secondStageEvolutions[j];
+
+				// Get name and sprite of evolution from API
+				evoSpeciesUrlArr = secondStageEvolution.species.url.split('/');
+				rawEvoSpeciesData = await this.getRawData(evoSpeciesUrlArr[evoSpeciesUrlArr.length - 2], 'pokemon-species', false);
+				evoBaseUrlArr = rawEvoSpeciesData.varieties[0].pokemon.url.split('/');
+				rawEvoBaseData = await this.getRawData(evoBaseUrlArr[evoBaseUrlArr.length - 2], 'pokemon', false);
+
+				processedData.push({
+					name: rawEvoSpeciesData.names.filter((name) => name.language.name === language)[0].name,
+					sprite: rawEvoBaseData.sprites.front_default,
+					stage: 2,
+					evolutionDetails: secondStageEvolution.evolution_details,
+				});
+
+				const thirdStageEvolutions = secondStageEvolution.evolves_to;
+				for (let k = 0; k < thirdStageEvolutions.length; k += 1) {
+					const thirdStageEvolution = thirdStageEvolutions[k];
+
+					// Get name and sprite of evolution from API
+					evoSpeciesUrlArr = thirdStageEvolution.species.url.split('/');
+					rawEvoSpeciesData = await this.getRawData(evoSpeciesUrlArr[evoSpeciesUrlArr.length - 2], 'pokemon-species', false);
+					evoBaseUrlArr = rawEvoSpeciesData.varieties[0].pokemon.url.split('/');
+					rawEvoBaseData = await this.getRawData(evoBaseUrlArr[evoBaseUrlArr.length - 2], 'pokemon', false);
+
+					processedData.push({
+						name: rawEvoSpeciesData.names.filter((name) => name.language.name === language)[0].name,
+						sprite: rawEvoBaseData.sprites.front_default,
+						stage: 2,
+						evolutionDetails: thirdStageEvolution.evolution_details,
+					});
+				}
+			}
+		}
+
+		processedData.babyTriggerItem = baby_trigger_item;
+		return processedData;
+	}
+
+	async processEncounterData(data) {
 		const {
 			language,
 		} = this.state;
@@ -632,8 +687,9 @@ export default class Pokedex extends React.Component {
 		} = this.state;
 
 		// Search for a Pokedex number
-		if (!Number.isNaN(searchTerm)) {
-			this.getData(searchTerm, false);
+		const pokedexNumberToSearch = parseInt(searchTerm, 10);
+		if (Number.isInteger(pokedexNumberToSearch) && pokedexNumberToSearch > 0 && pokedexNumberToSearch <= maxPokedexNumber) {
+			this.getData(pokedexNumberToSearch, false);
 			return;
 		}
 
@@ -643,6 +699,7 @@ export default class Pokedex extends React.Component {
 			return;
 		}
 
+		// Defaults to current Pokemon
 		this.getData(pokedexNumber, false);
 	}
 
@@ -682,6 +739,7 @@ export default class Pokedex extends React.Component {
 			statisticsData,
 			dataReady,
 			activeSprite,
+			spriteArr,
 			language,
 			activeSecondaryDisplay,
 			pokemonInput,
@@ -692,7 +750,6 @@ export default class Pokedex extends React.Component {
 		let typeTwo = '';
 		const abilities = [];
 		let typeEffectivenessObj = {};
-		let spriteObj = {};
 		let flavourText = '';
 		let displayLeftNumber = 0;
 		let displayRightNumber = 2;
@@ -722,9 +779,6 @@ export default class Pokedex extends React.Component {
 			// Type effectiveness
 			typeEffectivenessObj = generatePokemonTypeEffectiveness(typeData[0].damage_relations, typeTwoExists ? typeData[1].damage_relations : false, abilities);
 
-			// Sprites
-			spriteObj = baseData.sprites;
-
 			// Flavour text (description)
 			flavourText = selectSecondaryDisplayFlavourText(speciesData.flavor_text_entries, language);
 
@@ -734,7 +788,7 @@ export default class Pokedex extends React.Component {
 			displayLeftCycle = displayLeftNumber !== 0;
 			displayRightCycle = displayRightNumber !== maxPokedexNumber;
 			displayTopCycle = (activeSprite - 1) >= 0;
-			displayBottomCycle = (activeSprite + 1) <= 3;
+			displayBottomCycle = (activeSprite + 1) < spriteArr.length;
 
 			// Statistics
 			const statsArr = baseData.stats;
@@ -932,16 +986,13 @@ export default class Pokedex extends React.Component {
 													)}
 											</div>
 											<div className="sprite-wrapper">
-												{Object.keys(spriteObj).map((spriteKey) => {
-													const spriteUrl = spriteObj[spriteKey];
-													if (!spriteUrl) return null;
-
+												{spriteArr.map((spriteUrl, index) => {
+													const isActiveSprite = activeSprite === spriteArr.indexOf(spriteUrl);
 													return (
 														<Sprite
 															spriteUrl={spriteUrl}
-															spriteKey={spriteKey}
-															activeSprite={spriteKey === spriteRefObj[activeSprite]}
-															key={spriteKey}
+															activeSprite={isActiveSprite}
+															key={index}
 														/>
 													);
 												})}

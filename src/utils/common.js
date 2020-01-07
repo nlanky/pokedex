@@ -224,14 +224,16 @@ const selectAbilityFlavourText = (flavourTextArr, language) => {
 };
 
 const importPokemonCry = (pokedexNumber) => {
-	if (!pokedexNumber)
-		return import(
-			/* webpackMode: "lazy" */ `../assets/pokemon-cries/unknown.ogg`
-		);
-
-	return import(
-		/* webpackMode: "lazy" */ `../assets/pokemon-cries/${pokedexNumber}.ogg`
-	);	
+	let importedCry;
+	try {
+		require.resolve(`../assets/pokemon-cries/${pokedexNumber}.ogg`); // Checks if file exists
+		importedCry = import(/* webpackMode: "lazy" */ `../assets/pokemon-cries/${pokedexNumber}.ogg`);
+	} catch(e) {
+		console.error(`Could not find Pokemon cry for number: ${pokedexNumber}`);
+		importedCry = import(/* webpackMode: "lazy" */ `../assets/pokemon-cries/unknown.ogg`);
+	}
+	
+	return importedCry;
 };
 
 export {
