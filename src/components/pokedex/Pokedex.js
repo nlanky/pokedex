@@ -351,6 +351,7 @@ export default class Pokedex extends React.Component {
 	 */
 	async getData(id, name) {
 		const {
+			apiUrl,
 			pokedexNumber,
 			pokemonCry,
 			language,
@@ -370,8 +371,10 @@ export default class Pokedex extends React.Component {
 			pokemonToGet = id;
 		} else if (name) {
 			try {
-				baseData = await this.getRawData(name, 'pokemon', false);
-				pokemonToGet = baseData.id;
+				await axios.get(`${apiUrl}pokemon/${name}/`).then((response) => {
+					baseData = response.data;
+					pokemonToGet = baseData.id;
+				});
 			} catch(e) {
 				console.log(`getData -> Error: ${JSON.stringify(e)}`);
 				alert('Error fetching Pokemon data. Please check the Pokemon name entered.');
