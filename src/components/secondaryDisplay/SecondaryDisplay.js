@@ -288,44 +288,41 @@ const AbilitiesComponent = (props) => {
 const EncountersComponent = (props) => {
 	const {
 		encounters,
+		noWildEncounters,
 	} = props;
+
+	if (noWildEncounters) {
+		return (
+			<div className="encounter-container">
+				<div className="no-wild-encounters">
+					No wild encounters
+				</div>
+			</div>
+		);
+	}
 
 	return encounters.map((generation) => {
 		if (generation.data.length === 0) return null;
 
 		return (
 			<div className="encounter-container" key={generation.generation}>
-				<div>
-					{`Generation ${generation.generation}`}
-				</div>
-				<div className="encounter-header">
-					<div>Location</div>
-					<div>Game</div>
-					<div>Method</div>
-					<div>Levels</div>
-					<div>Chance</div>
-					<div>Conditions</div>
-				</div>
-				{generation.data.map((item, index) => {
-					return (
-						<div className="encounter-wrapper" key={index}>
-							<div>{item.location}</div>
-							<div>{item.version}</div>
-							<div>{item.method}</div>
-							<div>{item.levels}</div>
-							<div>{`${item.chance}%`}</div>
-							<div>
-								{item.conditions.map((condition, index) => {
-									return (
-										<div key={index}>
-											{condition}
-										</div>
-									);
-								})}
+				<div className="encounter-generation">
+					<div className="encounter-header">
+						{`Generation ${generation.generation}`}
+					</div>				
+					{generation.data.map((version, index) => {
+						return (
+							<div className="encounter-version" key={index}>
+								<div className="encounter-version-name">
+									{version.version}
+								</div>
+								<div className="encounter-locations">
+									{version.locations.join(', ')}
+								</div>
 							</div>
-						</div>
-					);
-				})}
+						);
+					})}
+				</div>
 			</div>
 		);
 	});
@@ -411,6 +408,7 @@ const SecondaryDisplay = (props) => {
 		typeEffectiveness,
 		abilities,
 		encounters,
+		noWildEncounters,
 		evolutionChain,
 		activeDisplay,
 	} = props;
@@ -427,7 +425,7 @@ const SecondaryDisplay = (props) => {
 		case 'abilities':
 			return <AbilitiesComponent abilities={abilities} />;
 		case 'encounters':
-			return <EncountersComponent encounters={encounters} />;
+			return <EncountersComponent encounters={encounters} noWildEncounters={noWildEncounters} />;
 		case 'evolutionChain':
 			return <EvolutionChainComponent evolutionChain={evolutionChain} />;
 		default:
@@ -443,6 +441,7 @@ SecondaryDisplay.propTypes = {
 	typeEffectiveness: PropTypes.array.isRequired,
 	abilities: PropTypes.array.isRequired,
 	encounters: PropTypes.array.isRequired,
+	noWildEncounters: PropTypes.bool.isRequired,
 	evolutionChain: PropTypes.array.isRequired,
 };
 

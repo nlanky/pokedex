@@ -106,10 +106,36 @@
 	width: 100%;
 }
 
-.encounter-header, .encounter-wrapper {
+.encounter-generation {
+	margin-bottom: 0.8rem;
+}
+
+.encounter-version {
 	display: flex;
-	flex-direction: row;
-	justify-content: space-between;
+	flex-wrap: wrap;
+}
+
+.encounter-header {
+	width: 100%;
+}
+
+.encounter-version-name {
+	width: calc(50% - 1rem);
+	margin-right: 1rem;
+	border-right: 1px solid #fff;
+}
+
+.encounter-locations {
+	width: 50%;
+}
+
+.encounter-header, .encounter-version-name, .encounter-locations {
+	margin-bottom: 0.4rem;
+}
+
+.no-wild-encounters {
+	display: flex;
+	justify-content: center;
 }
 
 .evolution-chain-container {

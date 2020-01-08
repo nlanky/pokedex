@@ -623,19 +623,21 @@ export default class Pokedex extends React.Component {
 
 		const processedData = [];
 		for (let i = 0; i < data.length; i += 1) {
+			// Initially get location area data
 			const rawLocation = data[i];
 			const locationAreaUrlArr = rawLocation.location_area.url.split('/');
 			const locationArea = await this.getRawData(locationAreaUrlArr[locationAreaUrlArr.length - 2], 'location-area', false);
 
 			// Requires location area response
+			// Generate a display name for location by checking if there is a name for location area
+			// Location area may not have a name!
 			const locationUrlArr = locationArea.location.url.split('/');
 			const location = await this.getRawData(locationUrlArr[locationUrlArr.length - 2], 'location', false);
-
-			const locationAreaName = locationArea.names.filter((name) => name.language.name === language)[0].name;
+			const filteredLocationArea = locationArea.names.filter((name) => name.language.name === language);
+			const filteredLocationAreaName = filteredLocationArea.length !== 0 ? filteredLocationArea[0].name : '';
 			const locationName = location.names.filter((name) => name.language.name === language)[0].name;
-			const locationDisplayName = `${locationName}${locationAreaName !== '' ? ` - ${locationAreaName}` : ''}`;
+			const locationDisplayName = `${locationName}${filteredLocationAreaName !== '' ? ` - ${filteredLocationAreaName}` : ''}`;
 
-			// Add entry to encounter data for each version and each encounter
 			const versionDetails = rawLocation.version_details;
 			for (let j = 0; j < versionDetails.length; j += 1) {
 				const rawVersion = versionDetails[j];
@@ -643,33 +645,25 @@ export default class Pokedex extends React.Component {
 				const version = await this.getRawData(versionUrlArr[versionUrlArr.length - 2], 'version', false);
 				const versionName = version.names.filter((name) => name.language.name === language)[0].name;
 
-				const encounterDetails = rawVersion.encounter_details;
-				for (let k = 0; k < encounterDetails.length; k += 1) {
-					const rawEncounter = encounterDetails[k];
-					const methodUrlArr = rawEncounter.method.url.split('/');
-					const method = await this.getRawData(methodUrlArr[methodUrlArr.length - 2], 'encounter-method', false);
-					const methodName = method.names.filter((name) => name.language.name === language)[0].name;
-					
-					const conditionArr = [];
-					const conditionValues = rawEncounter.condition_values;
-					for (let l = 0; l < conditionValues.length; l += 1) {
-						const rawCondition = conditionValues[l];
-						const conditionUrlArr = rawCondition.url.split('/');
-						const condition = await this.getRawData(conditionUrlArr[conditionUrlArr.length - 2], 'encounter-condition-value', false);
-						conditionArr.push(condition.names.filter((name) => name.language.name === language)[0].name);
+				// Format is to have a list of locations for each version
+				// Will group by generation in render method
+				// Check if we have version in processedData to add to
+				let foundVersion = false;
+				for (let k = 0; k < processedData.length; k += 1) {
+					if (processedData[k].version === versionName) {
+						processedData[k].locations.push(locationDisplayName);
+						foundVersion = true;
 					}
-
-					const minLevel = rawEncounter.min_level;
-					const maxLevel = rawEncounter.max_level;
-					processedData.push({
-						location: locationDisplayName,
-						version: versionName,
-						method: methodName,
-						levels: minLevel === maxLevel ? maxLevel : `${minLevel} - ${maxLevel}`,
-						chance: rawEncounter.chance,
-						conditions: conditionArr,
-					});
 				}
+
+				// Add new index to processedData if we couldn't find existing index
+				if (!foundVersion)
+					processedData.push({
+						version: versionName,
+						locations: [
+							locationDisplayName,
+						],
+					});
 			}
 		}
 
@@ -1114,6 +1108,7 @@ export default class Pokedex extends React.Component {
 									typeEffectiveness={typeEffectivenessObj}
 									abilities={abilities}
 									encounters={encounterArr}
+									noWildEncounters={encounterData.length === 0}
 									evolutionChain={evolutionData}
 								/>
 							)}
