@@ -1004,11 +1004,16 @@ export default class Pokedex extends React.Component {
 												onKeyDown={this.onKeyDown}
 											>
 												{displayRightCycle
-													&& <FaChevronRight color="#fff" />}
-												<span className="nav-number-text">
-													#
-													{displayRightNumber}
-												</span>
+													&& (
+														<>
+															<FaChevronRight color="#fff" />
+															<span className="nav-number-text">
+																#
+																{displayRightNumber}
+															</span>
+														</>
+													)}
+
 											</div>
 										</div>
 										<div className="sprite-bottom">
