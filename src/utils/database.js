@@ -5,7 +5,7 @@ export default class Database {
 
 	start() {
 		return new Promise((resolve, reject) => {
-			const request = indexedDB.open('pokemon', 2);
+			const request = indexedDB.open('pokemon', 1);
 
 			request.onerror = (event) => {
 				const errorMsg = `Database start error: ${event.target.errorCode}`;
@@ -76,6 +76,11 @@ export default class Database {
 				}
 				if (!this.db.objectStoreNames.contains('encounter-condition-value')) {
 					this.db.createObjectStore('encounter-condition-value', {
+						keyPath: 'id',
+					});
+				}
+				if (!this.db.objectStoreNames.contains('move')) {
+					this.db.createObjectStore('move', {
 						keyPath: 'id',
 					});
 				}

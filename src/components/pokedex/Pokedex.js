@@ -68,6 +68,7 @@ export default class Pokedex extends React.Component {
 			abilityData: [],
 			evolutionData: [],
 			statisticsData: [],
+			moveData: [],
 			dataReady: false,
 		};
 
@@ -79,7 +80,6 @@ export default class Pokedex extends React.Component {
 		this.onGridButtonClick = this.onGridButtonClick.bind(this);
 		this.onConfirmButtonClick = this.onConfirmButtonClick.bind(this);
 		this.onSpriteButtonClick = this.onSpriteButtonClick.bind(this);
-		this.onKeyDown = this.onKeyDown.bind(this);
 		this.onPokemonInput = this.onPokemonInput.bind(this);
 		this.onPokemonInputBlur = this.onPokemonInputBlur.bind(this);
 		this.onPokemonInputClick = this.onPokemonInputClick.bind(this);
@@ -87,6 +87,7 @@ export default class Pokedex extends React.Component {
 		this.getData = this.getData.bind(this);
 		this.processEvolutionData = this.processEvolutionData.bind(this);
 		this.processEncounterData = this.processEncounterData.bind(this);
+		this.processMoveData = this.processMoveData.bind(this);
 		this.searchPokemon = this.searchPokemon.bind(this);
 		this.scrollUp = this.scrollUp.bind(this);
 		this.scrollDown = this.scrollDown.bind(this);
@@ -239,7 +240,7 @@ export default class Pokedex extends React.Component {
 		pokemonCry.play();
 	}
 
-	onKeyDown() {};
+	static onKeyDown() {}
 
 	onPokemonInput(event) {
 		event.preventDefault();
@@ -364,6 +365,7 @@ export default class Pokedex extends React.Component {
 		const abilityData = [];
 		let evolutionData = [];
 		const statisticsData = [];
+		let moveData = [];
 		const spriteArr = [];
 
 		let pokemonToGet = pokedexNumber;
@@ -375,8 +377,8 @@ export default class Pokedex extends React.Component {
 					baseData = response.data;
 					pokemonToGet = baseData.id;
 				});
-			} catch(e) {
-				console.log(`getData -> Error: ${JSON.stringify(e)}`);
+			} catch (e) {
+				console.error(`getData -> Error: ${JSON.stringify(e)}`);
 				alert('Error fetching Pokemon data. Please check the Pokemon name entered.');
 
 				// If we fail to get data, revert back to current Pokemon
@@ -394,6 +396,9 @@ export default class Pokedex extends React.Component {
 				const spriteName = spriteRef[i];
 				if (spriteObj[spriteName]) spriteArr.push(spriteObj[spriteName]);
 			}
+
+			// Process move data
+			const processMovePromise = this.processMoveData(baseData.moves);
 
 			const speciesUrlArr = baseData.species.url.split('/');
 
@@ -433,8 +438,10 @@ export default class Pokedex extends React.Component {
 
 			// Can make these requests synchronously, only relying on base data
 			await Promise.all(baseDataPromises).then((res) => {
-				speciesData = res[0];
-				encounterData = res[1];
+				([
+					speciesData,
+					encounterData,
+				] = res);
 				statisticsData.push(
 					res[2],
 					res[3],
@@ -497,24 +504,41 @@ export default class Pokedex extends React.Component {
 				});
 			});
 
+			// Set Pokemon input value
+			const pokemonName = speciesData.names.filter((speciesName) => speciesName.language.name === language)[0].name;
+			const pokemonInput = `#${pokemonToGet} ${pokemonName}`;
+
+			// Process encounter data
+			const processEncounterPromise = this.processEncounterData(encounterData);
+
 			// After we have species data, we can get evolution line data
 			const evolutionUrlArr = speciesData.evolution_chain.url.split('/');
 			const rawEvolutionData = await this.getRawData(evolutionUrlArr[evolutionUrlArr.length - 2], 'evolution-chain', false);
-			evolutionData = await this.processEvolutionData(rawEvolutionData);
+			const processEvolutionPromise = this.processEvolutionData(rawEvolutionData);
 
 			// Set source for Pokemon cry, requires import (importPokemonCry)
-			const importedPokemonCry = await importPokemonCry(pokemonToGet).then((a) => a.default);
-			pokemonCry.src = importedPokemonCry;
+			const importCryPromise = importPokemonCry(pokemonToGet).then((a) => a.default);
 
-			// Process encounter data
-			encounterData = await this.processEncounterData(encounterData);
+			await Promise.all([
+				processMovePromise,
+				processEncounterPromise,
+				processEvolutionPromise,
+				importCryPromise,
+			]).then((res) => {
+				([
+					moveData,
+					encounterData,
+					evolutionData,
+				] = res);
 
-			// Set Pokemon input value
-			const pokemonName = speciesData.names.filter((pokemonName) => pokemonName.language.name === language)[0].name;
-			const pokemonInput = `#${pokemonToGet} ${pokemonName}`;
+				pokemonCry.src = res[3];
+			});
 
 			this.setState({
 				pokedexNumber: pokemonToGet,
+				pokemonInput,
+				activeSprite: 0, // Always reset back to default image
+				spriteArr,
 				baseData,
 				speciesData,
 				typeData,
@@ -522,9 +546,7 @@ export default class Pokedex extends React.Component {
 				abilityData,
 				evolutionData,
 				statisticsData,
-				pokemonInput,
-				activeSprite: 0, // Always reset back to default image
-				spriteArr,
+				moveData,
 				dataReady: true, // Remove loading spinner
 			});
 		} catch (e) {
@@ -660,17 +682,96 @@ export default class Pokedex extends React.Component {
 				}
 
 				// Add new index to processedData if we couldn't find existing index
-				if (!foundVersion)
+				if (!foundVersion) {
 					processedData.push({
 						version: versionName,
 						locations: [
 							locationDisplayName,
 						],
 					});
+				}
 			}
 		}
 
 		return processedData;
+	}
+
+	async processMoveData(data) {
+		const {
+			language,
+		} = this.state;
+
+		const processedData = [];
+
+		const processMove = (rawMove) => {
+			const moveUrlArr = rawMove.move.url.split('/');
+			return this.getRawData(moveUrlArr[moveUrlArr.length - 2], 'move', false).then((move) => {
+				const versionGroupDetails = rawMove.version_group_details;
+				for (let j = 0; j < versionGroupDetails.length; j += 1) {
+					const versionGroupDetailsIteration = versionGroupDetails[j];
+					const versionGroupName = versionGroupDetailsIteration.version_group.name;
+
+					// Assign to generation based on version group
+					let generation;
+					switch (versionGroupName) {
+						case 'red-blue':
+						case 'yellow':
+							generation = 1;
+							break;
+						case 'gold-silver':
+						case 'crystal':
+							generation = 2;
+							break;
+						case 'ruby-sapphire':
+						case 'emerald':
+						case 'firered-leafgreen':
+						case 'colosseum':
+						case 'xd':
+							generation = 3;
+							break;
+						case 'diamond-pearl':
+						case 'platinum':
+						case 'heartgold-soulsilver':
+							generation = 4;
+							break;
+						case 'black-white':
+						case 'black-2-white-2':
+							generation = 5;
+							break;
+						case 'x-y':
+						case 'omega-ruby-alpha-sapphire':
+							generation = 6;
+							break;
+						case 'sun-moon':
+						case 'ultra-sun-ultra-moon':
+							generation = 7;
+							break;
+						default:
+							break;
+					}
+
+					const name = move.names.filter((moveName) => moveName.language.name === language)[0].name;
+					const method = versionGroupDetailsIteration.move_learn_method.name;
+
+					// Only add to processedData if one of generation/name/method is different to existing entry in array
+					if (processedData.filter((m) => (m.generation === generation && m.name === name && m.method === method)).length === 0) {
+						processedData.push({
+							generation,
+							name,
+							method,
+							levelLearnedAt: versionGroupDetailsIteration.level_learned_at,
+						});
+					}
+				}
+			});
+		};
+
+		const movePromises = [];
+		for (let i = 0; i < data.length; i += 1) {
+			movePromises.push(processMove(data[i]));
+		}
+
+		return Promise.all(movePromises).then(() => processedData);
 	}
 
 	/**
@@ -725,6 +826,11 @@ export default class Pokedex extends React.Component {
 	render() {
 		const {
 			pokedexNumber,
+			pokemonInput,
+			activeSprite,
+			spriteArr,
+			activeSecondaryDisplay,
+			language,
 			baseData,
 			speciesData,
 			typeData,
@@ -732,12 +838,8 @@ export default class Pokedex extends React.Component {
 			abilityData,
 			evolutionData,
 			statisticsData,
+			moveData,
 			dataReady,
-			activeSprite,
-			spriteArr,
-			language,
-			activeSecondaryDisplay,
-			pokemonInput,
 		} = this.state;
 
 		// Declare variables for rendering
@@ -755,6 +857,7 @@ export default class Pokedex extends React.Component {
 		const processedStatsArr = [];
 		let heightWeightArr = [];
 		let encounterArr = [];
+		let moveArr = [];
 		if (dataReady) {
 			// Types
 			typeOne = typeData[0].name;
@@ -828,13 +931,13 @@ export default class Pokedex extends React.Component {
 			];
 
 			// Encounters
-			const generationOneData = [];
-			const generationTwoData = [];
-			const generationThreeData = [];
-			const generationFourData = [];
-			const generationFiveData = [];
-			const generationSixData = [];
-			const generationSevenData = [];
+			let generationOneData = [];
+			let generationTwoData = [];
+			let generationThreeData = [];
+			let generationFourData = [];
+			let generationFiveData = [];
+			let generationSixData = [];
+			let generationSevenData = [];
 
 			// Group by generation
 			// TODO: Make language dependent if possible
@@ -915,6 +1018,203 @@ export default class Pokedex extends React.Component {
 				{
 					generation: 7,
 					data: generationSevenData,
+				},
+			];
+
+			// Moves
+			generationOneData = [];
+			generationTwoData = [];
+			generationThreeData = [];
+			generationFourData = [];
+			generationFiveData = [];
+			generationSixData = [];
+			generationSevenData = [];
+
+			// Group by generation
+			moveData.forEach((move) => {
+				let methodIndex = -1;
+				switch (move.generation) {
+					case 1:
+						// TODO: Reduce duplicate code here
+						methodIndex = generationOneData.findIndex((method) => method.name === move.method);
+						if (methodIndex !== -1) {
+							// If we already have method in generation, just need to add to move array
+							generationOneData[methodIndex].moves.push({
+								name: move.name,
+								levelLearnedAt: move.levelLearnedAt,
+							});
+						} else {
+							// Need to create new method for generation and add to newly created move array
+							generationOneData.push({
+								name: move.method,
+								moves: [
+									{
+										name: move.name,
+										levelLearnedAt: move.levelLearnedAt,
+									},
+								],
+							});
+						}
+						break;
+					case 2:
+						methodIndex = generationTwoData.findIndex((method) => method.name === move.method);
+						if (methodIndex !== -1) {
+							// If we already have method in generation, just need to add to move array
+							generationTwoData[methodIndex].moves.push({
+								name: move.name,
+								levelLearnedAt: move.levelLearnedAt,
+							});
+						} else {
+							// Need to create new method for generation and add to newly created move array
+							generationTwoData.push({
+								name: move.method,
+								moves: [
+									{
+										name: move.name,
+										levelLearnedAt: move.levelLearnedAt,
+									},
+								],
+							});
+						}
+						break;
+					case 3:
+						methodIndex = generationThreeData.findIndex((method) => method.name === move.method);
+						if (methodIndex !== -1) {
+							// If we already have method in generation, just need to add to move array
+							generationThreeData[methodIndex].moves.push({
+								name: move.name,
+								levelLearnedAt: move.levelLearnedAt,
+							});
+						} else {
+							// Need to create new method for generation and add to newly created move array
+							generationThreeData.push({
+								name: move.method,
+								moves: [
+									{
+										name: move.name,
+										levelLearnedAt: move.levelLearnedAt,
+									},
+								],
+							});
+						}
+						break;
+					case 4:
+						methodIndex = generationFourData.findIndex((method) => method.name === move.method);
+						if (methodIndex !== -1) {
+							// If we already have method in generation, just need to add to move array
+							generationFourData[methodIndex].moves.push({
+								name: move.name,
+								levelLearnedAt: move.levelLearnedAt,
+							});
+						} else {
+							// Need to create new method for generation and add to newly created move array
+							generationFourData.push({
+								name: move.method,
+								moves: [
+									{
+										name: move.name,
+										levelLearnedAt: move.levelLearnedAt,
+									},
+								],
+							});
+						}
+						break;
+					case 5:
+						methodIndex = generationFiveData.findIndex((method) => method.name === move.method);
+						if (methodIndex !== -1) {
+							// If we already have method in generation, just need to add to move array
+							generationFiveData[methodIndex].moves.push({
+								name: move.name,
+								levelLearnedAt: move.levelLearnedAt,
+							});
+						} else {
+							// Need to create new method for generation and add to newly created move array
+							generationFiveData.push({
+								name: move.method,
+								moves: [
+									{
+										name: move.name,
+										levelLearnedAt: move.levelLearnedAt,
+									},
+								],
+							});
+						}
+						break;
+					case 6:
+						methodIndex = generationSixData.findIndex((method) => method.name === move.method);
+						if (methodIndex !== -1) {
+							// If we already have method in generation, just need to add to move array
+							generationSixData[methodIndex].moves.push({
+								name: move.name,
+								levelLearnedAt: move.levelLearnedAt,
+							});
+						} else {
+							// Need to create new method for generation and add to newly created move array
+							generationSixData.push({
+								name: move.method,
+								moves: [
+									{
+										name: move.name,
+										levelLearnedAt: move.levelLearnedAt,
+									},
+								],
+							});
+						}
+						break;
+					case 7:
+						methodIndex = generationSevenData.findIndex((method) => method.name === move.method);
+						if (methodIndex !== -1) {
+							// If we already have method in generation, just need to add to move array
+							generationSevenData[methodIndex].moves.push({
+								name: move.name,
+								levelLearnedAt: move.levelLearnedAt,
+							});
+						} else {
+							// Need to create new method for generation and add to newly created move array
+							generationSevenData.push({
+								name: move.method,
+								moves: [
+									{
+										name: move.name,
+										levelLearnedAt: move.levelLearnedAt,
+									},
+								],
+							});
+						}
+						break;
+					default:
+						break;
+				}
+			});
+
+			moveArr = [
+				{
+					generation: 1,
+					methods: generationOneData,
+				},
+				{
+					generation: 2,
+					methods: generationTwoData,
+				},
+				{
+					generation: 3,
+					methods: generationThreeData,
+				},
+				{
+					generation: 4,
+					methods: generationFourData,
+				},
+				{
+					generation: 5,
+					methods: generationFiveData,
+				},
+				{
+					generation: 6,
+					methods: generationSixData,
+				},
+				{
+					generation: 7,
+					methods: generationSevenData,
 				},
 			];
 		}
@@ -1113,6 +1413,7 @@ export default class Pokedex extends React.Component {
 									encounters={encounterArr}
 									noWildEncounters={encounterData.length === 0}
 									evolutionChain={evolutionData}
+									moves={moveArr}
 								/>
 							)}
 						</div>
@@ -1124,7 +1425,7 @@ export default class Pokedex extends React.Component {
 							<GridButton clickHandler={this.onGridButtonClick} screen="abilities" />
 							<GridButton clickHandler={this.onGridButtonClick} screen="encounters" />
 							<GridButton clickHandler={this.onGridButtonClick} screen="evolutionChain" />
-							<GridButton clickHandler={this.onGridButtonClick} />
+							<GridButton clickHandler={this.onGridButtonClick} screen="moves" />
 							<GridButton clickHandler={this.onGridButtonClick} />
 							<GridButton clickHandler={this.onGridButtonClick} />
 						</div>

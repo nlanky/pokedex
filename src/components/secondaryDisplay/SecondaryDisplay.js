@@ -309,19 +309,17 @@ const EncountersComponent = (props) => {
 				<div className="encounter-generation">
 					<div className="encounter-header">
 						{`Generation ${generation.generation}`}
-					</div>				
-					{generation.data.map((version, index) => {
-						return (
-							<div className="encounter-version" key={index}>
-								<div className="encounter-version-name">
-									{version.version}
-								</div>
-								<div className="encounter-locations">
-									{version.locations.join(', ')}
-								</div>
+					</div>
+					{generation.data.map((version, index) => (
+						<div className="encounter-version" key={index}>
+							<div className="encounter-version-name">
+								{version.version}
 							</div>
-						);
-					})}
+							<div className="encounter-locations">
+								{version.locations.join(', ')}
+							</div>
+						</div>
+					))}
 				</div>
 			</div>
 		);
@@ -338,7 +336,7 @@ const EvolutionChainComponent = (props) => {
 			evolution,
 		} = evoProps;
 
-		let evolutionStage = evolution.stage;
+		const evolutionStage = evolution.stage;
 		let evolutionStageText = 'Unevolved';
 		if (evolutionStage === 1) evolutionStageText = 'First Evolution';
 		if (evolutionStage === 2) evolutionStageText = 'Second Evolution';
@@ -400,6 +398,96 @@ const EvolutionChainComponent = (props) => {
 	);
 };
 
+const MovesComponent = (props) => {
+	const {
+		moves,
+	} = props;
+
+	const methodDisplayOrder = [
+		'level-up',
+		'machine',
+		'egg',
+		'tutor',
+		'stadium-surfing-pikachu',
+	];
+
+	const sortMethods = (a, b) => methodDisplayOrder.indexOf(a.name) - methodDisplayOrder.indexOf(b.name);
+
+	const sortMovesByLevel = (a, b) => {
+		if (a.levelLearnedAt === b.levelLearnedAt) {
+			return a.name.localeCompare(b.name);
+		}
+
+		return a.levelLearnedAt - b.levelLearnedAt;
+	};
+
+	const sortMovesByName = (a, b) => a.name.localeCompare(b.name);
+
+	// TODO: Allow for different languages?
+	const getMoveMethodHeader = (method) => {
+		let header = '';
+		switch (method) {
+			case 'machine':
+				header = 'By TM/HM/TR';
+				break;
+			case 'level-up':
+				header = 'By leveling up';
+				break;
+			case 'egg':
+				header = 'By breeding';
+				break;
+			case 'tutor':
+				header = 'By tutoring';
+				break;
+			case 'stadium-surfing-pikachu':
+				header = 'Stadium Surfing Pikachu';
+				break;
+			default:
+				break;
+		}
+
+		return header;
+	};
+
+	return moves.map((generation) => {
+		if (generation.methods.length === 0) return null;
+
+		return (
+			<div className="moves-container" key={generation.generation}>
+				<div className="moves-generation">
+					<div className="moves-header">
+						{`Generation ${generation.generation}`}
+					</div>
+					{generation.methods.sort(sortMethods).map((method, methodIndex) => {
+						const methodName = method.name;
+						const isLevelUp = methodName === 'level-up';
+
+						if (isLevelUp) method.moves.sort(sortMovesByLevel);
+						else method.moves.sort(sortMovesByName);
+
+						return (
+							<div className="moves-method-container" key={methodIndex}>
+								<div className="moves-method-header">{getMoveMethodHeader(methodName)}</div>
+								{method.moves.map((move, moveIndex) => (
+									<div className="moves-row" key={moveIndex}>
+										<div className={isLevelUp ? 'moves-name-level' : 'moves-name'}>{move.name}</div>
+										{isLevelUp && (
+											<div className="moves-level">
+												Level
+												{` ${move.levelLearnedAt}`}
+											</div>
+										)}
+									</div>
+								))}
+							</div>
+						);
+					})}
+				</div>
+			</div>
+		);
+	});
+};
+
 const SecondaryDisplay = (props) => {
 	const {
 		flavourText,
@@ -411,6 +499,7 @@ const SecondaryDisplay = (props) => {
 		noWildEncounters,
 		evolutionChain,
 		activeDisplay,
+		moves,
 	} = props;
 
 	switch (activeDisplay) {
@@ -428,6 +517,8 @@ const SecondaryDisplay = (props) => {
 			return <EncountersComponent encounters={encounters} noWildEncounters={noWildEncounters} />;
 		case 'evolutionChain':
 			return <EvolutionChainComponent evolutionChain={evolutionChain} />;
+		case 'moves':
+			return <MovesComponent moves={moves} />;
 		default:
 			return null;
 	}
@@ -443,6 +534,7 @@ SecondaryDisplay.propTypes = {
 	encounters: PropTypes.array.isRequired,
 	noWildEncounters: PropTypes.bool.isRequired,
 	evolutionChain: PropTypes.array.isRequired,
+	moves: PropTypes.array.isRequired,
 };
 
 FlavourTextComponent.propTypes = {
@@ -471,6 +563,10 @@ EncountersComponent.propTypes = {
 
 EvolutionChainComponent.propTypes = {
 	evolutionChain: PropTypes.array.isRequired,
+};
+
+MovesComponent.propTypes = {
+	moves: PropTypes.array.isRequired,
 };
 
 export default SecondaryDisplay;

@@ -26,7 +26,7 @@ const ConfirmButton = (props) => {
 };
 
 ConfirmButton.propTypes = {
-	clickHandler: PropTypes.func,
+	clickHandler: PropTypes.func.isRequired,
 };
 
 export default ConfirmButton;
