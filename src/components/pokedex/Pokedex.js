@@ -565,80 +565,95 @@ export default class Pokedex extends React.Component {
 
 		const {
 			chain,
-			baby_trigger_item,
 		} = data;
 
 		const processedData = [];
+		const processEvolution = (evolution, stage) => {
+			// Get name and sprite of evolution from API
+			const speciesUrlArr = evolution.species.url.split('/');
+			return this.getRawData(speciesUrlArr[speciesUrlArr.length - 2], 'pokemon-species', false).then((speciesData) => {
+				const baseUrlArr = speciesData.varieties[0].pokemon.url.split('/');
+				return this.getRawData(baseUrlArr[baseUrlArr.length - 2], 'pokemon', false).then((baseData) => {
+					processedData.push({
+						pokedexNumber: baseData.id,
+						name: speciesData.names.filter((name) => name.language.name === language)[0].name,
+						sprite: baseData.sprites.front_default,
+						stage,
+						evolutionDetails: evolution.evolution_details,
+					});
 
-		// Get name and sprite of evolution from API
-		let evoSpeciesUrlArr = chain.species.url.split('/');
-		let rawEvoSpeciesData = await this.getRawData(evoSpeciesUrlArr[evoSpeciesUrlArr.length - 2], 'pokemon-species', false);
-		let evoBaseUrlArr = rawEvoSpeciesData.varieties[0].pokemon.url.split('/');
-		let rawEvoBaseData = await this.getRawData(evoBaseUrlArr[evoBaseUrlArr.length - 2], 'pokemon', false);
+					// Return evolves_to in order to loop through again
+					return evolution.evolves_to;
+				});
+			});
+		};
 
-		processedData.push({
-			name: rawEvoSpeciesData.names.filter((name) => name.language.name === language)[0].name,
-			sprite: rawEvoBaseData.sprites.front_default,
-			stage: 0,
-			evolutionDetails: chain.evolution_details,
+		const sortEvolutionsByStage = (a, b) => {
+			if (a.stage < b.stage) return -1;
+			if (a.stage > b.stage) return 1;
+
+			return a.id - b.id;
+		};
+
+		// Add first Pokemon in chain
+		const speciesUrlArr = chain.species.url.split('/');
+		const startingEvolution = this.getRawData(speciesUrlArr[speciesUrlArr.length - 2], 'pokemon-species', false).then((speciesData) => {
+			const baseUrlArr = speciesData.varieties[0].pokemon.url.split('/');
+			return this.getRawData(baseUrlArr[baseUrlArr.length - 2], 'pokemon', false).then((baseData) => {
+				processedData.push({
+					pokedexNumber: baseData.id,
+					name: speciesData.names.filter((name) => name.language.name === language)[0].name,
+					sprite: baseData.sprites.front_default,
+					stage: 0,
+					evolutionDetails: chain.evolution_details,
+				});
+			});
 		});
 
-		const firstStageEvolutions = chain.evolves_to;
-		for (let i = 0; i < firstStageEvolutions.length; i += 1) {
-			const firstStageEvolution = firstStageEvolutions[i];
+		// Then loop through each evolves_to array at each evolution stage
+		const firstStageEvolvesTo = chain.evolves_to;
+		const stageOnePromises = [
+			startingEvolution,
+		];
 
-			// Get name and sprite of evolution from API
-			evoSpeciesUrlArr = firstStageEvolution.species.url.split('/');
-			rawEvoSpeciesData = await this.getRawData(evoSpeciesUrlArr[evoSpeciesUrlArr.length - 2], 'pokemon-species', false);
-			evoBaseUrlArr = rawEvoSpeciesData.varieties[0].pokemon.url.split('/');
-			rawEvoBaseData = await this.getRawData(evoBaseUrlArr[evoBaseUrlArr.length - 2], 'pokemon', false);
-
-			processedData.push({
-				name: rawEvoSpeciesData.names.filter((name) => name.language.name === language)[0].name,
-				sprite: rawEvoBaseData.sprites.front_default,
-				stage: 1,
-				evolutionDetails: firstStageEvolution.evolution_details,
-			});
-
-			const secondStageEvolutions = firstStageEvolution.evolves_to;
-			for (let j = 0; j < secondStageEvolutions.length; j += 1) {
-				const secondStageEvolution = secondStageEvolutions[j];
-
-				// Get name and sprite of evolution from API
-				evoSpeciesUrlArr = secondStageEvolution.species.url.split('/');
-				rawEvoSpeciesData = await this.getRawData(evoSpeciesUrlArr[evoSpeciesUrlArr.length - 2], 'pokemon-species', false);
-				evoBaseUrlArr = rawEvoSpeciesData.varieties[0].pokemon.url.split('/');
-				rawEvoBaseData = await this.getRawData(evoBaseUrlArr[evoBaseUrlArr.length - 2], 'pokemon', false);
-
-				processedData.push({
-					name: rawEvoSpeciesData.names.filter((name) => name.language.name === language)[0].name,
-					sprite: rawEvoBaseData.sprites.front_default,
-					stage: 2,
-					evolutionDetails: secondStageEvolution.evolution_details,
-				});
-
-				const thirdStageEvolutions = secondStageEvolution.evolves_to;
-				for (let k = 0; k < thirdStageEvolutions.length; k += 1) {
-					const thirdStageEvolution = thirdStageEvolutions[k];
-
-					// Get name and sprite of evolution from API
-					evoSpeciesUrlArr = thirdStageEvolution.species.url.split('/');
-					rawEvoSpeciesData = await this.getRawData(evoSpeciesUrlArr[evoSpeciesUrlArr.length - 2], 'pokemon-species', false);
-					evoBaseUrlArr = rawEvoSpeciesData.varieties[0].pokemon.url.split('/');
-					rawEvoBaseData = await this.getRawData(evoBaseUrlArr[evoBaseUrlArr.length - 2], 'pokemon', false);
-
-					processedData.push({
-						name: rawEvoSpeciesData.names.filter((name) => name.language.name === language)[0].name,
-						sprite: rawEvoBaseData.sprites.front_default,
-						stage: 2,
-						evolutionDetails: thirdStageEvolution.evolution_details,
-					});
-				}
-			}
+		for (let i = 0; i < firstStageEvolvesTo.length; i += 1) {
+			stageOnePromises.push(processEvolution(firstStageEvolvesTo[i], 1));
 		}
 
-		processedData.babyTriggerItem = baby_trigger_item;
-		return processedData;
+		const stageTwoPromises = [];
+		await Promise.all(stageOnePromises).then((res) => {
+			// First response will be first Pokemon from chain
+			// This will have been dealt with already (added to processedData above)
+			res.shift();
+			const secondStageEvolvesTo = res;
+			for (let k = 0; k < secondStageEvolvesTo.length; k += 1) {
+				const evolutions = secondStageEvolvesTo[k];
+				const numberEvolutions = evolutions.length;
+				if (numberEvolutions !== 0) {
+					for (let l = 0; l < numberEvolutions; l += 1) {
+						stageTwoPromises.push(processEvolution(evolutions[l], 2));
+					}
+				}
+			}
+		});
+
+		const stageThreePromises = [];
+		await Promise.all(stageTwoPromises).then((res) => {
+			const thirdStageEvolvesTo = res;
+			for (let m = 0; m < thirdStageEvolvesTo.length; m += 1) {
+				const evolutions = thirdStageEvolvesTo[m];
+				const numberEvolutions = evolutions.length;
+				if (numberEvolutions !== 0) {
+					for (let n = 0; n < numberEvolutions; n += 1) {
+						stageThreePromises.push(processEvolution(evolutions[n], 3));
+					}
+				}
+			}
+		});
+
+		// Order may be wrong if later promises resolved first
+		// Need to sort by stage and then Pokedex number
+		return Promise.all(stageThreePromises).then(() => processedData.sort(sortEvolutionsByStage));
 	}
 
 	async processEncounterData(data) {
@@ -647,53 +662,77 @@ export default class Pokedex extends React.Component {
 		} = this.state;
 
 		const processedData = [];
-		for (let i = 0; i < data.length; i += 1) {
+		const processEncounter = (rawLocation) => {
 			// Initially get location area data
-			const rawLocation = data[i];
-			const locationAreaUrlArr = rawLocation.location_area.url.split('/');
-			const locationArea = await this.getRawData(locationAreaUrlArr[locationAreaUrlArr.length - 2], 'location-area', false);
+			const areaUrlArr = rawLocation.location_area.url.split('/');
+			return this.getRawData(areaUrlArr[areaUrlArr.length - 2], 'location-area', false).then((locationArea) => {
+				// Use location area response to get location
+				const promises = [];
+				const locationUrlArr = locationArea.location.url.split('/');
 
-			// Requires location area response
-			// Generate a display name for location by checking if there is a name for location area
-			// Location area may not have a name!
-			const locationUrlArr = locationArea.location.url.split('/');
-			const location = await this.getRawData(locationUrlArr[locationUrlArr.length - 2], 'location', false);
-			const filteredLocationArea = locationArea.names.filter((name) => name.language.name === language);
-			const filteredLocationAreaName = filteredLocationArea.length !== 0 ? filteredLocationArea[0].name : '';
-			const locationName = location.names.filter((name) => name.language.name === language)[0].name;
-			const locationDisplayName = `${locationName}${filteredLocationAreaName !== '' ? ` - ${filteredLocationAreaName}` : ''}`;
+				// Add to promises to process later, avoids delaying version requests
+				promises.push(this.getRawData(locationUrlArr[locationUrlArr.length - 2], 'location', false));
 
-			const versionDetails = rawLocation.version_details;
-			for (let j = 0; j < versionDetails.length; j += 1) {
-				const rawVersion = versionDetails[j];
-				const versionUrlArr = rawVersion.version.url.split('/');
-				const version = await this.getRawData(versionUrlArr[versionUrlArr.length - 2], 'version', false);
-				const versionName = version.names.filter((name) => name.language.name === language)[0].name;
+				// Get details of all versions this location applies to
+				const versionDetails = rawLocation.version_details;
+				for (let i = 0; i < versionDetails.length; i += 1) {
+					const versionUrlArr = versionDetails[i].version.url.split('/');
+					promises.push(this.getRawData(versionUrlArr[versionUrlArr.length - 2], 'version', false));
+				}
 
-				// Format is to have a list of locations for each version
-				// Will group by generation in render method
-				// Check if we have version in processedData to add to
-				let foundVersion = false;
-				for (let k = 0; k < processedData.length; k += 1) {
-					if (processedData[k].version === versionName) {
-						processedData[k].locations.push(locationDisplayName);
-						foundVersion = true;
+				return Promise.all(promises).then((res) => {
+					// Generate a display name for location by checking if there is a name for location area
+					// Location area may not have a name!
+					// First response will be location
+					const filteredAreaNames = locationArea.names.filter((name) => name.language.name === language);
+
+					// Sanity check in case there is no location area name
+					const filteredAreaName = filteredAreaNames.length !== 0 ? filteredAreaNames[0].name : '';
+					const locationName = res[0].names.filter((name) => name.language.name === language)[0].name;
+					const locationDisplayName = `${locationName}${filteredAreaName !== '' ? ` - ${filteredAreaName}` : ''}`;
+
+					// Loop through versions, adding to processedData along the way
+					res.shift();
+					for (let j = 0; j < res.length; j += 1) {
+						const version = res[j];
+						const versionName = version.names.filter((name) => name.language.name === language)[0].name;
+
+						// Format is to have a list of locations for each version
+						// Will group by generation in render method
+						// Check if we have version in processedData to add to
+						const versionIndex = processedData.findIndex((element) => element.version === versionName);
+						if (versionIndex !== -1) {
+							processedData[versionIndex].locations.push(locationDisplayName);
+							return;
+						}
+
+						// Add new index to processedData if we couldn't find existing index
+						processedData.push({
+							version: versionName,
+							locations: [
+								locationDisplayName,
+							],
+						});
 					}
-				}
+				});
+			});
+		};
 
-				// Add new index to processedData if we couldn't find existing index
-				if (!foundVersion) {
-					processedData.push({
-						version: versionName,
-						locations: [
-							locationDisplayName,
-						],
-					});
-				}
-			}
+		const sortLocationsByName = (a, b) => a.localeCompare(b);
+
+		const promises = [];
+		for (let i = 0; i < data.length; i += 1) {
+			promises.push(processEncounter(data[i]));
 		}
 
-		return processedData;
+		return Promise.all(promises).then(() => {
+			// Sort locations by name for each version
+			for (let j = 0; j < processedData.length; j += 1) {
+				processedData[j].locations.sort(sortLocationsByName);
+			}
+
+			return processedData;
+		});
 	}
 
 	async processMoveData(data) {
@@ -956,15 +995,15 @@ export default class Pokedex extends React.Component {
 					case 'Ruby':
 					case 'Sapphire':
 					case 'Emerald':
-					case 'Fire Red':
-					case 'Leaf Green':
+					case 'FireRed':
+					case 'LeafGreen':
 						generationThreeData.push(encounter);
 						break;
 					case 'Diamond':
 					case 'Pearl':
 					case 'Platinum':
-					case 'Heart Gold':
-					case 'Soul Silver':
+					case 'HeartGold':
+					case 'SoulSilver':
 						generationFourData.push(encounter);
 						break;
 					case 'Black':
