@@ -231,7 +231,7 @@ const importPokemonCry = (pokedexNumber) => {
 		require.resolve(`../assets/pokemon-cries/${pokedexNumber}.ogg`); // Checks if file exists
 		importedCry = import(/* webpackMode: "lazy" */ `../assets/pokemon-cries/${pokedexNumber}.ogg`);
 	} catch(e) {
-		console.error(`Could not find Pokemon cry for number: ${pokedexNumber}`);
+		console.error(`importPokemonCry(${pokedexNumber}) -> Could not find or process cry. Error: ${JSON.stringify(e)}`);
 		importedCry = import(/* webpackMode: "lazy" */ `../assets/pokemon-cries/unknown.ogg`);
 	}
 	

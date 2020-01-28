@@ -69,6 +69,8 @@ export default class Pokedex extends React.Component {
 			evolutionData: [],
 			statisticsData: [],
 			moveData: [],
+			varietyData: [],
+			eggGroupData: [],
 			dataReady: false,
 		};
 
@@ -88,6 +90,8 @@ export default class Pokedex extends React.Component {
 		this.processEvolutionData = this.processEvolutionData.bind(this);
 		this.processEncounterData = this.processEncounterData.bind(this);
 		this.processMoveData = this.processMoveData.bind(this);
+		this.processVarietyData = this.processVarietyData.bind(this);
+		this.processEggGroupData = this.processEggGroupData.bind(this);
 		this.searchPokemon = this.searchPokemon.bind(this);
 		this.scrollUp = this.scrollUp.bind(this);
 		this.scrollDown = this.scrollDown.bind(this);
@@ -316,32 +320,48 @@ export default class Pokedex extends React.Component {
 
 		// Check if we have the response already in the DB
 		let dbData = null;
-		await database.readTransaction(type, idInt).then((data) => {
-			if (data) dbData = data;
-		});
+		try {
+			dbData = await database.readTransaction(type, idInt);
+		} catch (e) {
+			console.error(`getRawData(${id}, ${type}, ${isEncounterData}) -> Could not read data from database. Error: ${JSON.stringify(e)}`);
+			return Promise.reject(e);
+		}
 
-		if (dbData) {
-			// Encounter endpoint is in format /pokemon/[id]/encounters
-			if (isEncounterData && typeof dbData.location_area_encounters !== 'string') {
-				return dbData.location_area_encounters;
+		return new Promise((resolve, reject) => {
+			if (dbData) {
+				if (!isEncounterData) return resolve(dbData);
+
+				// location_area_encounters is a URL in form /pokemon/[id]/encounters
+				// before we overwrite after getting encounter data
+				if (typeof dbData.location_area_encounters !== 'string') return resolve(dbData.location_area_encounters);
 			}
 
-			if (!isEncounterData) return dbData;
-		}
+			// If data not in DB, need to make a request
+			if (isEncounterData) {
+				return axios.get(`${apiUrl}${type}/${idInt}/encounters`).then((response) => {
+					const responseData = response.data;
+					return database.updateTransaction(type, idInt, {
+						location_area_encounters: responseData,
+					}).then(() => resolve(responseData), (e) => {
+						console.error(`getRawData(${id}, ${type}, ${isEncounterData}) -> Could not write encounter data to database. Error: ${JSON.stringify(e)}`);
+						return reject(e);
+					});
+				}, (e) => {
+					console.error(`getRawData(${id}, ${type}, ${isEncounterData}) -> Could not retrieve encounter data from API. Error: ${JSON.stringify(e)}`);
+					return reject(e);
+				});
+			}
 
-		// If data not in DB, need to make a request
-		if (isEncounterData) {
-			return axios.get(`${apiUrl}${type}/${idInt}/encounters`).then((response) => {
+			return axios.get(`${apiUrl}${type}/${idInt}`).then((response) => {
 				const responseData = response.data;
-				return database.updateTransaction(type, idInt, {
-					location_area_encounters: responseData,
-				}).then(() => responseData);
+				return database.createTransaction(type, responseData).then(() => resolve(responseData), (e) => {
+					console.error(`getRawData(${id}, ${type}, ${isEncounterData}) -> Could not write data to database. Error: ${JSON.stringify(e)}`);
+					return reject(e);
+				});
+			}, (e) => {
+				console.error(`getRawData(${id}, ${type}, ${isEncounterData}) -> Could not retrieve data from API. Error: ${JSON.stringify(e)}`);
+				return reject(e);
 			});
-		}
-
-		return axios.get(`${apiUrl}${type}/${idInt}`).then((response) => {
-			const responseData = response.data;
-			return database.createTransaction(type, responseData).then(() => responseData);
 		});
 	}
 
@@ -367,226 +387,367 @@ export default class Pokedex extends React.Component {
 		const statisticsData = [];
 		let moveData = [];
 		const spriteArr = [];
+		let varietyData = [];
+		let eggGroupData = [];
 
 		let pokemonToGet = pokedexNumber;
 		if (id) {
 			pokemonToGet = id;
 		} else if (name) {
 			try {
-				await axios.get(`${apiUrl}pokemon/${name}/`).then((response) => {
-					baseData = response.data;
-					pokemonToGet = baseData.id;
-				});
+				const baseResponseFromName = await axios.get(`${apiUrl}pokemon/${name}/`);
+				baseData = baseResponseFromName.data;
+				pokemonToGet = baseData.id;
 			} catch (e) {
-				console.error(`getData -> Error: ${JSON.stringify(e)}`);
+				console.error(`getData(${id}, ${name}) -> Could not retrieve data for provided name. Error: ${JSON.stringify(e)}`);
 				alert('Error fetching Pokemon data. Please check the Pokemon name entered.');
 
 				// If we fail to get data, revert back to current Pokemon
 				this.getData(pokedexNumber, false);
+				return;
 			}
 		}
 
+		// First, get the base Pokemon data
 		try {
-			// First, get the base Pokemon data
 			baseData = await this.getRawData(pokemonToGet, 'pokemon', false);
-
-			// Add to sprite array from base response, only add non-null sprites
-			const spriteObj = baseData.sprites;
-			for (let i = 0; i < spriteRef.length; i += 1) {
-				const spriteName = spriteRef[i];
-				if (spriteObj[spriteName]) spriteArr.push(spriteObj[spriteName]);
-			}
-
-			// Process move data
-			const processMovePromise = this.processMoveData(baseData.moves);
-
-			const speciesUrlArr = baseData.species.url.split('/');
-
-			// Use base data to make requests to other API endpoints
-			const baseDataPromises = [
-				this.getRawData(speciesUrlArr[speciesUrlArr.length - 2], 'pokemon-species', false),
-				this.getRawData(pokemonToGet, 'pokemon', true),
-				this.getRawData(1, 'stat', false),
-				this.getRawData(2, 'stat', false),
-				this.getRawData(3, 'stat', false),
-				this.getRawData(4, 'stat', false),
-				this.getRawData(5, 'stat', false),
-				this.getRawData(6, 'stat', false),
-			];
-
-			// Pokemon may have 1 or 2 types
-			const typeArr = baseData.types.sort((a, b) => a.slot - b.slot);
-			const typeOneUrlArr = typeArr[0].type.url.split('/');
-			baseDataPromises.push(this.getRawData(typeOneUrlArr[typeOneUrlArr.length - 2], 'type', false));
-			if (typeArr[1]) {
-				const typeTwoUrlArr = typeArr[1].type.url.split('/');
-				baseDataPromises.push(this.getRawData(typeTwoUrlArr[typeTwoUrlArr.length - 2], 'type', false));
-			}
-
-			// Pokemon may have up to 3 abilities
-			const abilityArr = baseData.abilities.sort((a, b) => a.slot - b.slot);
-			const abilityOneUrlArr = abilityArr[0].ability.url.split('/');
-			baseDataPromises.push(this.getRawData(abilityOneUrlArr[abilityOneUrlArr.length - 2], 'ability', false));
-			if (abilityArr[1]) {
-				const abilityTwoUrlArr = abilityArr[1].ability.url.split('/');
-				baseDataPromises.push(this.getRawData(abilityTwoUrlArr[abilityTwoUrlArr.length - 2], 'ability', false));
-				if (abilityArr[2]) {
-					const abilityThreeUrlArr = abilityArr[2].ability.url.split('/');
-					baseDataPromises.push(this.getRawData(abilityThreeUrlArr[abilityThreeUrlArr.length - 2], 'ability', false));
-				}
-			}
-
-			// Can make these requests synchronously, only relying on base data
-			await Promise.all(baseDataPromises).then((res) => {
-				([
-					speciesData,
-					encounterData,
-				] = res);
-				statisticsData.push(
-					res[2],
-					res[3],
-					res[4],
-					res[5],
-					res[6],
-					res[7],
-				);
-				typeData.push(res[8]);
-
-				const noOfTypes = typeArr.length;
-				const noOfAbilities = abilityArr.length;
-				if (noOfTypes === 1) {
-					switch (noOfAbilities) {
-						case 1:
-							abilityData.push(res[9]);
-							break;
-						case 2:
-							abilityData.push(res[9]);
-							abilityData.push(res[10]);
-							break;
-						case 3:
-							abilityData.push(res[9]);
-							abilityData.push(res[10]);
-							abilityData.push(res[11]);
-							break;
-						default:
-							break;
-					}
-				} else {
-					typeData.push(res[9]);
-					switch (noOfAbilities) {
-						case 1:
-							abilityData.push(res[10]);
-							break;
-						case 2:
-							abilityData.push(res[10]);
-							abilityData.push(res[11]);
-							break;
-						case 3:
-							abilityData.push(res[10]);
-							abilityData.push(res[11]);
-							abilityData.push(res[12]);
-							break;
-						default:
-							break;
-					}
-				}
-
-				// Add hidden property to ability data
-				abilityData.forEach(function (ability, index) {
-					this[index].hidden = abilityArr[index].is_hidden;
-				}, abilityData);
-
-				// Sort statistics by game index
-				statisticsData.sort((a, b) => {
-					if (a.game_index > b.game_index) return 1;
-					if (a.game_index < b.game_index) return -1;
-					return 0;
-				});
-			});
-
-			// Set Pokemon input value
-			const pokemonName = speciesData.names.filter((speciesName) => speciesName.language.name === language)[0].name;
-			const pokemonInput = `#${pokemonToGet} ${pokemonName}`;
-
-			// Process encounter data
-			const processEncounterPromise = this.processEncounterData(encounterData);
-
-			// After we have species data, we can get evolution line data
-			const evolutionUrlArr = speciesData.evolution_chain.url.split('/');
-			const rawEvolutionData = await this.getRawData(evolutionUrlArr[evolutionUrlArr.length - 2], 'evolution-chain', false);
-			const processEvolutionPromise = this.processEvolutionData(rawEvolutionData);
-
-			// Set source for Pokemon cry, requires import (importPokemonCry)
-			const importCryPromise = importPokemonCry(pokemonToGet).then((a) => a.default);
-
-			await Promise.all([
-				processMovePromise,
-				processEncounterPromise,
-				processEvolutionPromise,
-				importCryPromise,
-			]).then((res) => {
-				([
-					moveData,
-					encounterData,
-					evolutionData,
-				] = res);
-
-				pokemonCry.src = res[3];
-			});
-
-			this.setState({
-				pokedexNumber: pokemonToGet,
-				pokemonInput,
-				activeSprite: 0, // Always reset back to default image
-				spriteArr,
-				baseData,
-				speciesData,
-				typeData,
-				encounterData,
-				abilityData,
-				evolutionData,
-				statisticsData,
-				moveData,
-				dataReady: true, // Remove loading spinner
-			});
 		} catch (e) {
-			console.error(`getData -> Error: ${JSON.stringify(e)}`);
-			alert('Error fetching Pokemon data');
-
-			// If we fail to get data, revert back to current Pokemon
+			console.error(`getData(${id}, ${name}) -> Could not retrieve Pokemon base data. Error: ${JSON.stringify(e)}`);
+			alert('Could not find Pokemon with provided name.');
 			this.getData(pokedexNumber, false);
+			return;
 		}
+
+		// Add to sprite array from base response, only add non-null sprites
+		const spriteObj = baseData.sprites;
+		for (let i = 0; i < spriteRef.length; i += 1) {
+			const spriteName = spriteRef[i];
+			if (spriteObj[spriteName]) spriteArr.push(spriteObj[spriteName]);
+		}
+
+		// Used to get identifier for species request
+		const speciesUrlArr = baseData.species.url.split('/');
+
+		// Species
+		const speciesPromise = new Promise((resolve, reject) => {
+			this.getRawData(speciesUrlArr[speciesUrlArr.length - 2], 'pokemon-species', false).then((response) => {
+				speciesData = response;
+
+				// Used to get identifier for evolution chain request
+				const evolutionUrlArr = speciesData.evolution_chain.url.split('/');
+				const evolutionPromise = this.processEvolutionData(evolutionUrlArr[evolutionUrlArr.length - 2]);
+
+				const speciesPromises = [
+					evolutionPromise,
+				];
+
+				// Add requests to get egg group data
+				const eggGroups = speciesData.egg_groups;
+				const numberEggGroups = eggGroups.length;
+				for (let j = 0; j < numberEggGroups; j += 1) {
+					const eggGroupUrlArr = eggGroups[j].url.split('/');
+					speciesPromises.push(this.getRawData(eggGroupUrlArr[eggGroupUrlArr.length - 2], 'egg-group', false));
+				}
+
+				// Add requests to get variety data
+				const {
+					varieties,
+				} = speciesData;
+
+				const numberVarieties = varieties.length;
+				for (let k = 0; k < numberVarieties; k += 1) {
+					const variety = varieties[k];
+
+					// Ignore the default variety as we're already showing data for it
+					const varietyUrlArr = variety.pokemon.url.split('/');
+
+					const varietyPromise = new Promise((resolveVariety, rejectVariety) => {
+						this.getRawData(varietyUrlArr[varietyUrlArr.length - 2], 'pokemon', false).then((varietyResponse) => {
+							// TODO: Check if we only need first index of forms
+							const formUrlArr = varietyResponse.forms[0].url.split('/');
+							this.getRawData(formUrlArr[formUrlArr.length - 2], 'pokemon-form', false).then((formResponse) => {
+								resolveVariety(formResponse);
+							}, (e) => {
+								console.error(`getData(${id}, ${name}) -> Could not retrieve form data. Error: ${JSON.stringify(e)}`);
+								rejectVariety(e);
+							});
+						}, (e) => {
+							console.error(`getData(${id}, ${name}) -> Could not retrieve variety data. Error: ${JSON.stringify(e)}`);
+							rejectVariety(e);
+						});
+					});
+					speciesPromises.push(varietyPromise);
+				}
+
+				Promise.all(speciesPromises).then((res) => {
+					([
+						evolutionData,
+					] = res);
+
+					const fallbackName = speciesData.names.filter((speciesName) => speciesName.language.name === language)[0].name;
+
+					// There will always be 1 or 2 egg groups
+					if (numberEggGroups === 1) {
+						// Process egg group
+						eggGroupData = this.processEggGroupData([
+							res[1],
+						]);
+
+						// Any remaining responses will be varieties
+						varietyData = this.processVarietyData(res.splice(2), fallbackName);
+					} else {
+						// Process egg groups
+						eggGroupData = this.processEggGroupData([
+							res[1],
+							res[2],
+						]);
+
+						// Any remaining responses will be varieties
+						varietyData = this.processVarietyData(res.splice(3), fallbackName);
+					}
+
+					resolve();
+				}, (e) => {
+					console.error(`getData(${id}, ${name}) -> Could not resolve species data promises. Error: ${JSON.stringify(e)}`);
+					reject(e);
+				});
+
+			}, (e) => {
+				console.error(`getData(${id}, ${name}) -> Could not retrieve species data. Error: ${JSON.stringify(e)}`);
+				reject(e);
+			});
+		});
+
+		// For encounters, need to make request to endpoint in base response and process
+		const encounterPromise = new Promise((resolve, reject) => {
+			this.getRawData(pokemonToGet, 'pokemon', true).then((response) => this.processEncounterData(response).then((data) => {
+				encounterData = data;
+				resolve();
+			}, (e) => {
+				console.error(`getData(${id}, ${name}) -> Could not process encounter data. Error: ${JSON.stringify(e)}`);
+				reject(e);
+			}), (e) => {
+				console.error(`getData(${id}, ${name}) -> Could not retrieve encounter data. Error: ${JSON.stringify(e)}`);
+				reject(e);
+			});
+		});
+
+		// Promises that require base data
+		// Use base data to make requests to other API endpoints
+		const promises = [
+			importPokemonCry(pokemonToGet).then((a) => a.default), // Pokemon cry
+			speciesPromise, // Species & Evolution Chain
+			encounterPromise, // Encounters
+			this.processMoveData(baseData.moves), // Moves
+			this.getRawData(1, 'stat', false), // Statistic - HP
+			this.getRawData(2, 'stat', false), // Statistic - Attack
+			this.getRawData(3, 'stat', false), // Statistic - Defense
+			this.getRawData(4, 'stat', false), // Statistic - Special Attack
+			this.getRawData(5, 'stat', false), // Statistic - Special Defense
+			this.getRawData(6, 'stat', false), // Statistic - Speed
+		];
+
+		// Pokemon may have 1 or 2 types, sort by slot
+		const typeArr = baseData.types.sort((a, b) => a.slot - b.slot);
+		const typeOneUrlArr = typeArr[0].type.url.split('/');
+		promises.push(this.getRawData(typeOneUrlArr[typeOneUrlArr.length - 2], 'type', false));
+		if (typeArr[1]) {
+			const typeTwoUrlArr = typeArr[1].type.url.split('/');
+			promises.push(this.getRawData(typeTwoUrlArr[typeTwoUrlArr.length - 2], 'type', false));
+		}
+
+		// Pokemon may have up to 3 abilities
+		const abilityArr = baseData.abilities.sort((a, b) => a.slot - b.slot);
+		const abilityOneUrlArr = abilityArr[0].ability.url.split('/');
+		promises.push(this.getRawData(abilityOneUrlArr[abilityOneUrlArr.length - 2], 'ability', false));
+		if (abilityArr[1]) {
+			const abilityTwoUrlArr = abilityArr[1].ability.url.split('/');
+			promises.push(this.getRawData(abilityTwoUrlArr[abilityTwoUrlArr.length - 2], 'ability', false));
+			if (abilityArr[2]) {
+				const abilityThreeUrlArr = abilityArr[2].ability.url.split('/');
+				promises.push(this.getRawData(abilityThreeUrlArr[abilityThreeUrlArr.length - 2], 'ability', false));
+			}
+		}
+
+		// Can make these requests synchronously, only relying on base data
+		let responses;
+		try {
+			responses = await Promise.all(promises);
+		} catch (e) {
+			console.error(`getData(${id}, ${name}) -> Could not resolve base data promises. Error: ${JSON.stringify(e)}`);
+			alert('Error fetching Pokemon data.');
+			this.getData(pokedexNumber, false);
+			return;
+		}
+
+		// Set file source for Pokemon cry
+		const {
+			0: crySource, // Index 0 of responses
+		} = responses;
+
+		pokemonCry.src = crySource;
+
+		// Set move data
+		const {
+			3: moveResponse, // Index 3 of responses
+		} = responses;
+
+		moveData = moveResponse;
+
+		// Set statistics data
+		statisticsData.push(
+			responses[4],
+			responses[5],
+			responses[6],
+			responses[7],
+			responses[8],
+			responses[9],
+		);
+
+		// Set type and ability data
+		typeData.push(responses[10]);
+		const noOfTypes = typeArr.length;
+		const noOfAbilities = abilityArr.length;
+		if (noOfTypes === 1) {
+			switch (noOfAbilities) {
+				case 1:
+					abilityData.push(responses[11]);
+					break;
+				case 2:
+					abilityData.push(responses[11]);
+					abilityData.push(responses[12]);
+					break;
+				case 3:
+					abilityData.push(responses[11]);
+					abilityData.push(responses[12]);
+					abilityData.push(responses[13]);
+					break;
+				default:
+					break;
+			}
+		} else {
+			typeData.push(responses[11]);
+			switch (noOfAbilities) {
+				case 1:
+					abilityData.push(responses[12]);
+					break;
+				case 2:
+					abilityData.push(responses[12]);
+					abilityData.push(responses[13]);
+					break;
+				case 3:
+					abilityData.push(responses[12]);
+					abilityData.push(responses[13]);
+					abilityData.push(responses[14]);
+					break;
+				default:
+					break;
+			}
+		}
+
+		// Add hidden property to ability data
+		abilityData.forEach(function (ability, index) {
+			this[index].hidden = abilityArr[index].is_hidden;
+		}, abilityData);
+
+		// Sort statistics by game index
+		statisticsData.sort((a, b) => {
+			if (a.game_index > b.game_index) return 1;
+			if (a.game_index < b.game_index) return -1;
+			return 0;
+		});
+
+		// Set Pokemon input value
+		const pokemonName = speciesData.names.filter((speciesName) => speciesName.language.name === language)[0].name;
+		const pokemonInput = `#${pokemonToGet} ${pokemonName}`;
+
+		this.setState({
+			pokedexNumber: pokemonToGet,
+			pokemonInput,
+			activeSprite: 0, // Always reset back to default image
+			spriteArr,
+			baseData,
+			speciesData,
+			typeData,
+			encounterData,
+			abilityData,
+			evolutionData,
+			statisticsData,
+			eggGroupData,
+			varietyData,
+			moveData,
+			dataReady: true, // Remove loading spinner
+		});
 	}
 
-	async processEvolutionData(data) {
+	async processEvolutionData(evolutionUrl) {
 		const {
 			language,
 		} = this.state;
 
+		const data = await this.getRawData(evolutionUrl, 'evolution-chain', false);
 		const {
 			chain,
 		} = data;
 
 		const processedData = [];
-		const processEvolution = (evolution, stage) => {
+		const processEvolution = (evolution, stage) => new Promise((resolve, reject) => {
 			// Get name and sprite of evolution from API
 			const speciesUrlArr = evolution.species.url.split('/');
 			return this.getRawData(speciesUrlArr[speciesUrlArr.length - 2], 'pokemon-species', false).then((speciesData) => {
 				const baseUrlArr = speciesData.varieties[0].pokemon.url.split('/');
 				return this.getRawData(baseUrlArr[baseUrlArr.length - 2], 'pokemon', false).then((baseData) => {
+					const evolutionDetails = evolution.evolution_details;
+					const processedEvolutionDetails = [];
+					for (let i = 0; i < evolutionDetails.length; i += 1) {
+						const evolutionDetail = evolutionDetails[i];
+						const detailKeys = Object.keys(evolutionDetail);
+						const iterationPromises = [];
+						const keysToReplace = [];
+						for (let j = 0; j < detailKeys.length; j += 1) {
+							const detailKey = detailKeys[j];
+							const keyData = evolutionDetail[detailKey];
+							if (keyData !== null && typeof keyData === 'object') {
+								const urlArr = keyData.url.split('/');
+								iterationPromises.push(this.getRawData(urlArr[urlArr.length - 2], urlArr[urlArr.length - 3], false));
+								keysToReplace.push(detailKey);
+							}
+						}
+
+						// TODO: Investigate processing these promises at the same time
+						// TODO: Issue with same requests overlapping similarly to locations
+						Promise.all(iterationPromises).then((res) => {
+							// Replace keys in evolution details with responses
+							for (let k = 0; k < keysToReplace.length; k += 1) {
+								evolutionDetail[keysToReplace[k]] = res[k].names.filter((name) => name.language.name === language)[0].name;
+							}
+
+							processedEvolutionDetails.push(evolutionDetail);
+						}, (e) => {
+							console.error(`processEvolution(${evolution.species.name}) -> Could not retrieve evolution detail data. Error: ${JSON.stringify(e)}`);
+							reject(e);
+						});
+					}
+
 					processedData.push({
 						pokedexNumber: baseData.id,
 						name: speciesData.names.filter((name) => name.language.name === language)[0].name,
 						sprite: baseData.sprites.front_default,
 						stage,
-						evolutionDetails: evolution.evolution_details,
+						evolutionDetails: processedEvolutionDetails,
 					});
 
 					// Return evolves_to in order to loop through again
-					return evolution.evolves_to;
+					resolve(evolution.evolves_to);
+				}, (e) => {
+					console.error(`processEvolution(${evolution.species.name}) -> Could not retrieve base data. Error: ${JSON.stringify(e)}`);
+					reject(e);
 				});
+			}, (e) => {
+				console.error(`processEvolution(${evolution.species.name}) -> Could not retrieve species data. Error: ${JSON.stringify(e)}`);
+				reject(e);
 			});
-		};
+		});
 
 		const sortEvolutionsByStage = (a, b) => {
 			if (a.stage < b.stage) return -1;
@@ -596,60 +757,43 @@ export default class Pokedex extends React.Component {
 		};
 
 		// Add first Pokemon in chain
-		const speciesUrlArr = chain.species.url.split('/');
-		const startingEvolution = this.getRawData(speciesUrlArr[speciesUrlArr.length - 2], 'pokemon-species', false).then((speciesData) => {
-			const baseUrlArr = speciesData.varieties[0].pokemon.url.split('/');
-			return this.getRawData(baseUrlArr[baseUrlArr.length - 2], 'pokemon', false).then((baseData) => {
-				processedData.push({
-					pokedexNumber: baseData.id,
-					name: speciesData.names.filter((name) => name.language.name === language)[0].name,
-					sprite: baseData.sprites.front_default,
-					stage: 0,
-					evolutionDetails: chain.evolution_details,
-				});
-			});
-		});
+		const stageOnePromises = [
+			processEvolution(chain, 0),
+		];
 
 		// Then loop through each evolves_to array at each evolution stage
 		const firstStageEvolvesTo = chain.evolves_to;
-		const stageOnePromises = [
-			startingEvolution,
-		];
-
 		for (let i = 0; i < firstStageEvolvesTo.length; i += 1) {
 			stageOnePromises.push(processEvolution(firstStageEvolvesTo[i], 1));
 		}
 
 		const stageTwoPromises = [];
-		await Promise.all(stageOnePromises).then((res) => {
-			// First response will be first Pokemon from chain
-			// This will have been dealt with already (added to processedData above)
-			res.shift();
-			const secondStageEvolvesTo = res;
-			for (let k = 0; k < secondStageEvolvesTo.length; k += 1) {
-				const evolutions = secondStageEvolvesTo[k];
-				const numberEvolutions = evolutions.length;
-				if (numberEvolutions !== 0) {
-					for (let l = 0; l < numberEvolutions; l += 1) {
-						stageTwoPromises.push(processEvolution(evolutions[l], 2));
-					}
+		const stageOneResponses = await Promise.all(stageOnePromises);
+
+		// First response will be first Pokemon from chain
+		// This will have been dealt with already in processEvolution (added to processedData)
+		stageOneResponses.shift();
+		for (let j = 0; j < stageOneResponses.length; j += 1) {
+			const evolutions = stageOneResponses[j];
+			const numberEvolutions = evolutions.length;
+			if (numberEvolutions !== 0) {
+				for (let k = 0; k < numberEvolutions; k += 1) {
+					stageTwoPromises.push(processEvolution(evolutions[k], 2));
 				}
 			}
-		});
+		}
 
 		const stageThreePromises = [];
-		await Promise.all(stageTwoPromises).then((res) => {
-			const thirdStageEvolvesTo = res;
-			for (let m = 0; m < thirdStageEvolvesTo.length; m += 1) {
-				const evolutions = thirdStageEvolvesTo[m];
-				const numberEvolutions = evolutions.length;
-				if (numberEvolutions !== 0) {
-					for (let n = 0; n < numberEvolutions; n += 1) {
-						stageThreePromises.push(processEvolution(evolutions[n], 3));
-					}
+		const stageTwoResponses = await Promise.all(stageTwoPromises);
+		for (let l = 0; l < stageTwoResponses.length; l += 1) {
+			const evolutions = stageTwoResponses[l];
+			const numberEvolutions = evolutions.length;
+			if (numberEvolutions !== 0) {
+				for (let m = 0; m < numberEvolutions; m += 1) {
+					stageThreePromises.push(processEvolution(evolutions[m], 3));
 				}
 			}
-		});
+		}
 
 		// Order may be wrong if later promises resolved first
 		// Need to sort by stage and then Pokedex number
@@ -662,25 +806,35 @@ export default class Pokedex extends React.Component {
 		} = this.state;
 
 		const processedData = [];
-		const processEncounter = (rawLocation) => {
+
+		const processEncounter = (rawLocation) => new Promise((resolve, reject) => {
 			// Initially get location area data
 			const areaUrlArr = rawLocation.location_area.url.split('/');
-			return this.getRawData(areaUrlArr[areaUrlArr.length - 2], 'location-area', false).then((locationArea) => {
+
+			const promises = [
+				this.getRawData(areaUrlArr[areaUrlArr.length - 2], 'location-area', false),
+			];
+
+			// Can also get details of all versions this location applies to at same time
+			const versionDetails = rawLocation.version_details;
+			const versionNumber = versionDetails.length;
+			for (let i = 0; i < versionNumber; i += 1) {
+				const versionUrlArr = versionDetails[i].version.url.split('/');
+				promises.push(this.getRawData(versionUrlArr[versionUrlArr.length - 2], 'version', false));
+			}
+
+			Promise.all(promises).then((responses) => {
+				// First response will be location area
+				const [
+					locationArea,
+				] = responses;
+
+				// Remove location area response, should have versions remaining
+				responses.shift();
+
 				// Use location area response to get location
-				const promises = [];
 				const locationUrlArr = locationArea.location.url.split('/');
-
-				// Add to promises to process later, avoids delaying version requests
-				promises.push(this.getRawData(locationUrlArr[locationUrlArr.length - 2], 'location', false));
-
-				// Get details of all versions this location applies to
-				const versionDetails = rawLocation.version_details;
-				for (let i = 0; i < versionDetails.length; i += 1) {
-					const versionUrlArr = versionDetails[i].version.url.split('/');
-					promises.push(this.getRawData(versionUrlArr[versionUrlArr.length - 2], 'version', false));
-				}
-
-				return Promise.all(promises).then((res) => {
+				this.getRawData(locationUrlArr[locationUrlArr.length - 2], 'location', false).then((location) => {
 					// Generate a display name for location by checking if there is a name for location area
 					// Location area may not have a name!
 					// First response will be location
@@ -688,13 +842,12 @@ export default class Pokedex extends React.Component {
 
 					// Sanity check in case there is no location area name
 					const filteredAreaName = filteredAreaNames.length !== 0 ? filteredAreaNames[0].name : '';
-					const locationName = res[0].names.filter((name) => name.language.name === language)[0].name;
+					const locationName = location.names.filter((name) => name.language.name === language)[0].name;
 					const locationDisplayName = `${locationName}${filteredAreaName !== '' ? ` - ${filteredAreaName}` : ''}`;
 
-					// Loop through versions, adding to processedData along the way
-					res.shift();
-					for (let j = 0; j < res.length; j += 1) {
-						const version = res[j];
+					// Loop through versions, adding to processedData
+					for (let j = 0; j < responses.length; j += 1) {
+						const version = responses[j];
 						const versionName = version.names.filter((name) => name.language.name === language)[0].name;
 
 						// Format is to have a list of locations for each version
@@ -703,36 +856,35 @@ export default class Pokedex extends React.Component {
 						const versionIndex = processedData.findIndex((element) => element.version === versionName);
 						if (versionIndex !== -1) {
 							processedData[versionIndex].locations.push(locationDisplayName);
-							return;
+						} else {
+							// Add new index to processedData if we couldn't find existing index
+							processedData.push({
+								version: versionName,
+								locations: [
+									locationDisplayName,
+								],
+							});
 						}
-
-						// Add new index to processedData if we couldn't find existing index
-						processedData.push({
-							version: versionName,
-							locations: [
-								locationDisplayName,
-							],
-						});
 					}
+
+					resolve();
+				}, (e) => {
+					console.error(`processEncounterData(${rawLocation.location_area.name}) -> Could not retrieve location data. Error: ${JSON.stringify(e)}`);
+					reject(e);
 				});
+			}, (e) => {
+				console.error(`processEncounterData(${rawLocation.location_area.name}) -> Could not retrieve location area or version data. Error: ${JSON.stringify(e)}`);
+				reject(e);
 			});
-		};
+		});
 
-		const sortLocationsByName = (a, b) => a.localeCompare(b);
-
-		const promises = [];
+		// TODO: Issue with inserting same version data to database at the same time
+		// TODO: Refactor to process encounters at same time rather than using await
 		for (let i = 0; i < data.length; i += 1) {
-			promises.push(processEncounter(data[i]));
+			await processEncounter(data[i]);
 		}
 
-		return Promise.all(promises).then(() => {
-			// Sort locations by name for each version
-			for (let j = 0; j < processedData.length; j += 1) {
-				processedData[j].locations.sort(sortLocationsByName);
-			}
-
-			return processedData;
-		});
+		return processedData;
 	}
 
 	async processMoveData(data) {
@@ -742,9 +894,9 @@ export default class Pokedex extends React.Component {
 
 		const processedData = [];
 
-		const processMove = (rawMove) => {
+		const processMove = (rawMove) => new Promise((resolve, reject) => {
 			const moveUrlArr = rawMove.move.url.split('/');
-			return this.getRawData(moveUrlArr[moveUrlArr.length - 2], 'move', false).then((move) => {
+			this.getRawData(moveUrlArr[moveUrlArr.length - 2], 'move', false).then((move) => {
 				const versionGroupDetails = rawMove.version_group_details;
 				for (let j = 0; j < versionGroupDetails.length; j += 1) {
 					const versionGroupDetailsIteration = versionGroupDetails[j];
@@ -802,15 +954,64 @@ export default class Pokedex extends React.Component {
 						});
 					}
 				}
+
+				resolve();
+			}, (e) => {
+				console.error(`processMoveData -> Could not retrieve move data. Error: ${JSON.stringify(e)}`);
+				reject(e);
 			});
-		};
+		});
 
 		const movePromises = [];
 		for (let i = 0; i < data.length; i += 1) {
 			movePromises.push(processMove(data[i]));
 		}
 
-		return Promise.all(movePromises).then(() => processedData);
+		return new Promise((resolve, reject) => {
+			Promise.all(movePromises).then(() => resolve(processedData), (e) => reject(e));
+		});
+	}
+
+	processVarietyData(data, fallbackName) {
+		const {
+			language,
+		} = this.state;
+
+		const varietyData = [];
+		for (let i = 0; i < data.length; i += 1) {
+			const variety = data[i];
+			let displayName = fallbackName;
+			const formNameArr = variety.form_names.filter((varietyName) => varietyName.language.name === language);
+			if (formNameArr.length !== 0) displayName = formNameArr[0].name;
+			else {
+				const namesArr = variety.names.filter((varietyName) => varietyName.language.name === language);
+				if (namesArr.length !== 0) displayName = namesArr[0].name;
+			}
+
+			varietyData.push({
+				name: displayName,
+				sprite: variety.sprites.front_default,
+			});
+		}
+
+		return varietyData;
+	}
+
+	processEggGroupData(data) {
+		const {
+			language,
+		} = this.state;
+
+		const eggGroupData = [];
+		for (let i = 0; i < data.length; i += 1) {
+			const eggGroup = data[i];
+			eggGroupData.push({
+				name: eggGroup.names.filter((eggGroupName) => eggGroupName.language.name === language)[0].name,
+				numberSpecies: eggGroup.pokemon_species.length,
+			});
+		}
+
+		return eggGroupData;
 	}
 
 	/**
@@ -878,6 +1079,8 @@ export default class Pokedex extends React.Component {
 			evolutionData,
 			statisticsData,
 			moveData,
+			varietyData,
+			eggGroupData,
 			dataReady,
 		} = this.state;
 
@@ -958,14 +1161,19 @@ export default class Pokedex extends React.Component {
 			}, processedStatsArr);
 
 			// Height & Weight
+			const {
+				height,
+				weight,
+			} = baseData;
+
 			heightWeightArr = [
 				{
 					name: 'Height',
-					value: baseData.height,
+					value: height,
 				},
 				{
 					name: 'Weight',
-					value: baseData.weight,
+					value: weight,
 				},
 			];
 
@@ -1453,6 +1661,8 @@ export default class Pokedex extends React.Component {
 									noWildEncounters={encounterData.length === 0}
 									evolutionChain={evolutionData}
 									moves={moveArr}
+									varieties={varietyData}
+									eggGroups={eggGroupData}
 								/>
 							)}
 						</div>
@@ -1465,8 +1675,8 @@ export default class Pokedex extends React.Component {
 							<GridButton clickHandler={this.onGridButtonClick} screen="encounters" />
 							<GridButton clickHandler={this.onGridButtonClick} screen="evolutionChain" />
 							<GridButton clickHandler={this.onGridButtonClick} screen="moves" />
-							<GridButton clickHandler={this.onGridButtonClick} />
-							<GridButton clickHandler={this.onGridButtonClick} />
+							<GridButton clickHandler={this.onGridButtonClick} screen="varieties" />
+							<GridButton clickHandler={this.onGridButtonClick} screen="eggGroups" />
 						</div>
 						<div className="misc-button-container">
 							<div className="misc-button-left-col">

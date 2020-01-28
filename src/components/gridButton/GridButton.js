@@ -28,7 +28,7 @@ const GridButton = (props) => {
 
 GridButton.propTypes = {
 	screen: PropTypes.string.isRequired,
-	clickHandler: PropTypes.func,
+	clickHandler: PropTypes.func.isRequired,
 };
 
 export default GridButton;

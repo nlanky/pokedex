@@ -8,15 +8,14 @@ export default class Database {
 			const request = indexedDB.open('pokemon', 1);
 
 			request.onerror = (event) => {
-				const errorMsg = `Database start error: ${event.target.errorCode}`;
-				console.error(errorMsg);
-				reject(errorMsg);
+				console.error(`Database.start() -> Failed to start database. Error: ${JSON.stringify(event.target.error)}`);
+				reject(event.target.error);
 			};
 
 			request.onsuccess = (event) => {
 				this.db = event.target.result;
 				this.db.onerror = (dbEvent) => {
-					console.error(`Database error: ${dbEvent.target.errorCode}`);
+					console.error(`Database.onerror -> Caught error on database instance. Error: ${dbEvent.target.error}`);
 				};
 				resolve();
 			};
@@ -84,13 +83,33 @@ export default class Database {
 						keyPath: 'id',
 					});
 				}
+				if (!this.db.objectStoreNames.contains('egg-group')) {
+					this.db.createObjectStore('egg-group', {
+						keyPath: 'id',
+					});
+				}
+				if (!this.db.objectStoreNames.contains('pokemon-form')) {
+					this.db.createObjectStore('pokemon-form', {
+						keyPath: 'id',
+					});
+				}
+				if (!this.db.objectStoreNames.contains('evolution-trigger')) {
+					this.db.createObjectStore('evolution-trigger', {
+						keyPath: 'id',
+					});
+				}
+				if (!this.db.objectStoreNames.contains('item')) {
+					this.db.createObjectStore('item', {
+						keyPath: 'id',
+					});
+				}
 			};
 		});
 	}
 
 	createTransaction(store, data) {
 		return new Promise((resolve, reject) => {
-			if (!this.db) reject('Database not initialised');
+			if (!this.db) reject(new Error('Database not initialised'));
 
 			const request = this.db.transaction([store], 'readwrite').objectStore(store).add(data);
 			request.onsuccess = (event) => {
@@ -98,14 +117,15 @@ export default class Database {
 			};
 
 			request.onerror = (event) => {
-				reject(`Create transaction error: ${event.target.errorCode}`);
+				console.error(`Database.createTransaction(${data.id}, ${store}) -> Failed to write to database. Error: ${JSON.stringify(event.target.error)}`);
+				reject(event.target.error);
 			};
 		});
 	}
 
 	readTransaction(store, key) {
 		return new Promise((resolve, reject) => {
-			if (!this.db) reject('Database not initialised');
+			if (!this.db) reject(new Error('Database not initialised'));
 
 			// Transaction mode defaults to 'readonly'
 			const request = this.db.transaction(store).objectStore(store).get(key);
@@ -114,21 +134,21 @@ export default class Database {
 			};
 
 			request.onerror = (event) => {
-				reject(`Read transaction error: ${event.target.errorCode}`);
+				console.error(`Database.readTransaction(${key}, ${store}) -> Failed to read from database. Error: ${JSON.stringify(event.target.error)}`);
+				reject(event.target.error);
 			};
 		});
 	}
 
 	updateTransaction(store, key, data) {
 		return new Promise((resolve, reject) => {
-			if (!this.db) reject('Database not initialised');
+			if (!this.db) reject(new Error('Database not initialised'));
 
 			const objectStore = this.db.transaction(store, 'readwrite').objectStore(store);
 			const readRequest = objectStore.get(key); // Mode defaults to 'readonly'
 			readRequest.onsuccess = (event) => {
 				// Retrieved current data for provided key
 				const updatedData = event.target.result;
-
 
 				// Now update data for key
 				const newDataKeys = Object.keys(data);
@@ -144,19 +164,21 @@ export default class Database {
 				};
 
 				putRequest.onerror = (updateEvent) => {
-					reject(`Update transaction error: ${updateEvent.target.errorCode}`);
+					console.error(`Database.updateTransaction(${key}, ${store}) -> Failed to update database. Error: ${JSON.stringify(updateEvent.target.error)}`);
+					reject(updateEvent.target.error);
 				};
 			};
 
 			readRequest.onerror = (event) => {
-				reject(`Update transaction error: ${event.target.errorCode}`);
+				console.error(`Database.updateTransaction(${key}, ${store}) -> Failed to read from database. Error: ${JSON.stringify(event.target.error)}`);
+				reject(event.target.error);
 			};
 		});
 	}
 
 	deleteTransaction(store, key) {
 		return Promise((resolve, reject) => {
-			if (!this.db) reject('Database not initialised');
+			if (!this.db) reject(new Error('Database not initialised'));
 
 			const request = this.db.transaction([store], 'readwrite').objectStore(store).delete(key);
 			request.onsuccess = (event) => {
@@ -164,7 +186,8 @@ export default class Database {
 			};
 
 			request.onerror = (event) => {
-				reject(`Delete transaction error: ${event.target.errorCode}`);
+				console.error(`Database.deleteTransaction(${key}, ${store}) -> Failed to delete from database. Error: ${JSON.stringify(event.target.error)}`);
+				reject(event.target.error);
 			};
 		});
 	}

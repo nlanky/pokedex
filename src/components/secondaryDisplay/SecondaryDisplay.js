@@ -361,32 +361,73 @@ const EvolutionChainComponent = (props) => {
 			details,
 		} = detailProps;
 
-		const triggerName = details.trigger.name;
-		const level = details.min_level;
-		const showLevel = triggerName === 'level-up' && level;
-		const evolutionStone = details.item && details.item.name;
-		const heldItem = details.held_item && details.held_item.name;
-		const showFriendship = details.min_happiness;
-		const knownMove = details.known_move && details.known_move.name;
-		const knownMoveType = details.known_move_type && details.known_move_type.name;
-		const showLocation = details.location && details.location.name;
-		const showTimeOfDay = details.time_of_day.length !== 0;
-		const showGender = details.gender;
-		let genderText = 'Female';
-		if (showGender === 2) genderText = 'Male';
+		const {
+			trigger,
+			min_level,
+			item,
+			held_item,
+			min_happiness,
+			min_affection,
+			min_beauty,
+			known_move,
+			known_move_type,
+			location,
+			time_of_day,
+			gender,
+			party_species,
+			party_type,
+			turn_upside_down,
+			needs_overworld_rain,
+			relative_physical_stats,
+		} = details;
 
+		// Determine gender name for display
+		let genderName = 'Female';
+		if (gender === 2) genderName = 'Male';
 
+		// Determine physical stats for display
+		let physicalStatDisplay = 'Attack = Defense';
+		if (relative_physical_stats === -1) physicalStatDisplay = 'Attack < Defense';
+		if (relative_physical_stats === 1) physicalStatDisplay = 'Attack > Defense';
+
+		const showLevel = trigger === 'Level up' && min_level;
+
+		// TODO: Make language dependent
+		// TODO: Add game when API data becomes available e.g. Cosmoem
 		return (
 			<div className="evolution-details-wrapper">
-				{showLevel && <div>Level {level}</div>}
-				{evolutionStone && <div>{evolutionStone}</div>}
-				{heldItem && <div>{heldItem}</div>}
-				{showFriendship && <div>Friendship</div>}
-				{knownMove && <div>{knownMove}</div>}
-				{knownMoveType && <div>Knows {knownMoveType} move</div>}
-				{showLocation && <div>{showLocation}</div>}
-				{showTimeOfDay && <div>{details.time_of_day}</div>}
-				{showGender && <div>{genderText}</div>}
+				{trigger && <div>{trigger === 'Shed' ? 'Slot in party and Pokeball' : trigger}</div>}
+				{showLevel && <div>{min_level}</div>}
+				{item && <div>{item}</div>}
+				{held_item && <div>{held_item}</div>}
+				{min_happiness && (
+					<div>
+						Happiness:
+						{` ${min_happiness}`}
+					</div>
+				)}
+				{min_affection && (
+					<div>
+						Affection:
+						{` ${min_affection}`}
+					</div>
+				)}
+				{min_beauty && (
+					<div>
+						Beauty:
+						{` ${min_beauty}`}
+					</div>
+				)}
+				{known_move && <div>{known_move}</div>}
+				{known_move_type && <div>Knows {known_move_type} move</div>}
+				{location && <div>{location}</div>}
+				{time_of_day && <div>{time_of_day === 'day' ? 'Day' : 'Night'}</div>}
+				{gender && <div>{genderName}</div>}
+				{party_species && <div>In party: {party_species}</div>}
+				{party_type && <div>Type in party: {party_type}</div>}
+				{turn_upside_down && <div>Device upside down</div>}
+				{needs_overworld_rain && <div>Overworld rain/fog</div>}
+				{relative_physical_stats !== null && <div>{physicalStatDisplay}</div>}
 			</div>
 		);
 	};
@@ -488,6 +529,61 @@ const MovesComponent = (props) => {
 	});
 };
 
+const VarietiesComponent = (props) => {
+	const {
+		varieties,
+	} = props;
+
+	return (
+		<div className="varieties-container">
+			{varieties.map((variety) => {
+				const {
+					name,
+				} = variety;
+
+				return (
+					<div className="variety-wrapper" key={name}>
+						<div className="variety-sprite-wrapper">
+							<img
+								alt={`${name} sprite`}
+								src={variety.sprite}
+							/>
+						</div>
+						<div>{name}</div>
+					</div>
+				);
+			})}
+		</div>
+	);
+
+};
+
+const EggGroupsComponent = (props) => {
+	const {
+		eggGroups,
+	} = props;
+
+	return (
+		<div className="egg-group-container">
+			{eggGroups.map((eggGroup) => {
+				const {
+					name,
+				} = eggGroup;
+
+				return (
+					<div className="egg-group-wrapper" key={name}>
+						<div className="egg-group-name">{name}</div>
+						<div className="egg-group-species">
+							Pok&eacute;mon in group:
+							{` ${eggGroup.numberSpecies}`}
+						</div>
+					</div>
+				);
+			})}
+		</div>
+	);
+};
+
 const SecondaryDisplay = (props) => {
 	const {
 		flavourText,
@@ -500,6 +596,8 @@ const SecondaryDisplay = (props) => {
 		evolutionChain,
 		activeDisplay,
 		moves,
+		varieties,
+		eggGroups,
 	} = props;
 
 	switch (activeDisplay) {
@@ -519,6 +617,10 @@ const SecondaryDisplay = (props) => {
 			return <EvolutionChainComponent evolutionChain={evolutionChain} />;
 		case 'moves':
 			return <MovesComponent moves={moves} />;
+		case 'varieties':
+			return <VarietiesComponent varieties={varieties} />;
+		case 'eggGroups':
+			return <EggGroupsComponent eggGroups={eggGroups} />;
 		default:
 			return null;
 	}
@@ -535,6 +637,8 @@ SecondaryDisplay.propTypes = {
 	noWildEncounters: PropTypes.bool.isRequired,
 	evolutionChain: PropTypes.array.isRequired,
 	moves: PropTypes.array.isRequired,
+	varieties: PropTypes.array.isRequired,
+	eggGroups: PropTypes.array.isRequired,
 };
 
 FlavourTextComponent.propTypes = {
@@ -567,6 +671,14 @@ EvolutionChainComponent.propTypes = {
 
 MovesComponent.propTypes = {
 	moves: PropTypes.array.isRequired,
+};
+
+VarietiesComponent.propTypes = {
+	varieties: PropTypes.array.isRequired,
+};
+
+EggGroupsComponent.propTypes = {
+	eggGroups: PropTypes.array.isRequired,
 };
 
 export default SecondaryDisplay;
