@@ -2,6 +2,8 @@ import React from 'react';
 
 import axios from 'axios';
 import { Wave } from 'better-react-spinkit';
+import 'intro.js/introjs.css';
+import { Steps } from 'intro.js-react';
 import {
 	FaChevronLeft,
 	FaChevronRight,
@@ -18,6 +20,7 @@ import {
 	selectAbilityFlavourText,
 	importPokemonCry,
 	isValidPokedexNumber,
+	jsonErrorReplacer,
 } from '../../utils/common';
 
 import '../../styles/app.scss';
@@ -34,7 +37,9 @@ import ConfirmButton from '../confirmButton';
 import SlimButton from '../slimButton';
 import Vent from '../vent';
 import SpriteButton from '../spriteButton';
-import PowerButton from '../powerButton';
+import WalkthroughButton from '../walkthroughButton';
+
+import background from '../../assets/images/background.jpg';
 
 // Useful object to ensure preferred order of sprites is correct
 const spriteRef = [
@@ -47,6 +52,123 @@ const spriteRef = [
 	'front_shiny_female',
 	'back_shiny_female',
 ];
+
+// Walkthrough steps
+const walkthroughSteps = [
+	// element (CSS selector for step)
+	// intro (tooltip text)
+	// position (position of tooltip)
+	// tooltipClass (CSS class of tooltip)
+	// highlightClass (CSS class of helper layer)
+	{
+		element: '.walkthrough-button',
+		intro: 'Toggle the walkthrough at any time using this button',
+		position: 'bottom',
+	},
+	{
+		element: '.sprite-cycle.left',
+		intro: 'Go to the previous Pok&eacute;mon (if applicable)',
+		position: 'bottom',
+	},
+	{
+		element: '.sprite-cycle.right',
+		intro: 'Go to the next Pok&eacute;mon (if applicable)',
+		position: 'bottom',
+	},
+	{
+		element: '.sprite-cycle.top',
+		intro: 'Go to the previous sprite (if applicable)',
+		position: 'bottom',
+	},
+	{
+		element: '.sprite-cycle.bottom',
+		intro: 'Go to the next sprite (if applicable)',
+		position: 'bottom',
+	},
+	{
+		element: '.sprite-button',
+		intro: 'Play the Pok&eacute;mon\'s cry',
+		position: 'bottom',
+	},
+	{
+		element: '.number-display-wrapper',
+		intro: 'Search for a Pok&eacute;mon using their name or Pok&eacute;dex number',
+		position: 'bottom',
+	},
+	{
+		element: '.dpad-wrapper',
+		intro: 'You can use the D-pad as an alternative to the arrows on the left display',
+		position: 'bottom',
+	},
+	{
+		element: '.grid-button.flavourText',
+		intro: 'Show flavour text (description)',
+		position: 'bottom',
+	},
+	{
+		element: '.grid-button.statistics',
+		intro: 'Show statistics',
+		position: 'bottom',
+	},
+	{
+		element: '.grid-button.heightWeight',
+		intro: 'Show height and weight',
+		position: 'bottom',
+	},
+	{
+		element: '.grid-button.typeEffectiveness',
+		intro: 'Show type effectiveness when being attacked',
+		position: 'bottom',
+	},
+	{
+		element: '.grid-button.abilities',
+		intro: 'Show abilities',
+		position: 'bottom',
+	},
+	{
+		element: '.grid-button.encounters',
+		intro: 'Show wild encounter locations',
+		position: 'bottom',
+	},
+	{
+		element: '.grid-button.evolutionChain',
+		intro: 'Show evolution chain',
+		position: 'bottom',
+	},
+	{
+		element: '.grid-button.moves',
+		intro: 'Show moves',
+		position: 'bottom',
+	},
+	{
+		element: '.grid-button.varieties',
+		intro: 'Show varieties (including mega evolutions)',
+		position: 'bottom',
+	},
+	{
+		element: '.grid-button.eggGroups',
+		intro: 'Show egg groups',
+		position: 'bottom',
+	},
+	{
+		element: '.white-grid-button.up',
+		intro: 'Scroll the right display up',
+		position: 'bottom',
+	},
+	{
+		element: '.white-grid-button.down',
+		intro: 'Scroll the right display down',
+		position: 'bottom',
+	},
+	{
+		element: '.confirm-button',
+		intro: 'Go to a random Pok&eacute;mon',
+		position: 'bottom',
+	},
+];
+
+// Background image
+document.getElementById('root').style.backgroundImage = `url('${background}')`;
 
 export default class Pokedex extends React.Component {
 	constructor(props) {
@@ -72,6 +194,7 @@ export default class Pokedex extends React.Component {
 			varietyData: [],
 			eggGroupData: [],
 			dataReady: false,
+			showWalkthrough: false,
 		};
 
 		// Binding methods
@@ -85,6 +208,8 @@ export default class Pokedex extends React.Component {
 		this.onPokemonInput = this.onPokemonInput.bind(this);
 		this.onPokemonInputBlur = this.onPokemonInputBlur.bind(this);
 		this.onPokemonInputClick = this.onPokemonInputClick.bind(this);
+		this.onWalkthroughToggle = this.onWalkthroughToggle.bind(this);
+		this.onWalkthroughExit = this.onWalkthroughExit.bind(this);
 		this.getRawData = this.getRawData.bind(this);
 		this.getData = this.getData.bind(this);
 		this.processEvolutionData = this.processEvolutionData.bind(this);
@@ -107,7 +232,7 @@ export default class Pokedex extends React.Component {
 			// First load defaults to #1 (Bulbasaur)
 			this.getData(false, false);
 		}, (e) => {
-			console.error(`Database couldn't be opened. Error: ${JSON.stringify(e)}`);
+			console.error(`Pokedex.componentDidMount -> Database couldn't be opened. Error: ${JSON.stringify(e, jsonErrorReplacer)}`);
 		});
 	}
 
@@ -206,6 +331,9 @@ export default class Pokedex extends React.Component {
 
 		if (!dataReady) return;
 
+		// Reset scroll position on secondary display
+		document.getElementById('secondary_display').scrollTop = 0;
+
 		this.setState({
 			activeSecondaryDisplay: screen,
 		});
@@ -302,6 +430,22 @@ export default class Pokedex extends React.Component {
 		});
 	}
 
+	onWalkthroughToggle() {
+		const {
+			showWalkthrough,
+		} = this.state;
+
+		this.setState({
+			showWalkthrough: !showWalkthrough,
+		});
+	}
+
+	onWalkthroughExit() {
+		this.setState({
+			showWalkthrough: false,
+		})
+	}
+
 	/**
 	 * Fetches raw data from DB or API. If fetching from API, inserts into DB too.
 	 * @param {Number} id - Unique identifier from API
@@ -323,7 +467,7 @@ export default class Pokedex extends React.Component {
 		try {
 			dbData = await database.readTransaction(type, idInt);
 		} catch (e) {
-			console.error(`getRawData(${id}, ${type}, ${isEncounterData}) -> Could not read data from database. Error: ${JSON.stringify(e)}`);
+			console.error(`getRawData(${id}, ${type}, ${isEncounterData}) -> Could not read data from database. Error: ${JSON.stringify(e, jsonErrorReplacer)}`);
 			return Promise.reject(e);
 		}
 
@@ -343,11 +487,11 @@ export default class Pokedex extends React.Component {
 					return database.updateTransaction(type, idInt, {
 						location_area_encounters: responseData,
 					}).then(() => resolve(responseData), (e) => {
-						console.error(`getRawData(${id}, ${type}, ${isEncounterData}) -> Could not write encounter data to database. Error: ${JSON.stringify(e)}`);
+						console.error(`getRawData(${id}, ${type}, ${isEncounterData}) -> Could not write encounter data to database. Error: ${JSON.stringify(e, jsonErrorReplacer)}`);
 						return reject(e);
 					});
 				}, (e) => {
-					console.error(`getRawData(${id}, ${type}, ${isEncounterData}) -> Could not retrieve encounter data from API. Error: ${JSON.stringify(e)}`);
+					console.error(`getRawData(${id}, ${type}, ${isEncounterData}) -> Could not retrieve encounter data from API. Error: ${JSON.stringify(e, jsonErrorReplacer)}`);
 					return reject(e);
 				});
 			}
@@ -355,11 +499,11 @@ export default class Pokedex extends React.Component {
 			return axios.get(`${apiUrl}${type}/${idInt}`).then((response) => {
 				const responseData = response.data;
 				return database.createTransaction(type, responseData).then(() => resolve(responseData), (e) => {
-					console.error(`getRawData(${id}, ${type}, ${isEncounterData}) -> Could not write data to database. Error: ${JSON.stringify(e)}`);
+					console.error(`getRawData(${id}, ${type}, ${isEncounterData}) -> Could not write data to database. Error: ${JSON.stringify(e, jsonErrorReplacer)}`);
 					return reject(e);
 				});
 			}, (e) => {
-				console.error(`getRawData(${id}, ${type}, ${isEncounterData}) -> Could not retrieve data from API. Error: ${JSON.stringify(e)}`);
+				console.error(`getRawData(${id}, ${type}, ${isEncounterData}) -> Could not retrieve data from API. Error: ${JSON.stringify(e, jsonErrorReplacer)}`);
 				return reject(e);
 			});
 		});
@@ -399,7 +543,7 @@ export default class Pokedex extends React.Component {
 				baseData = baseResponseFromName.data;
 				pokemonToGet = baseData.id;
 			} catch (e) {
-				console.error(`getData(${id}, ${name}) -> Could not retrieve data for provided name. Error: ${JSON.stringify(e)}`);
+				console.error(`getData(${id}, ${name}) -> Could not retrieve data for provided name. Error: ${JSON.stringify(e, jsonErrorReplacer)}`);
 				alert('Error fetching Pokemon data. Please check the Pokemon name entered.');
 
 				// If we fail to get data, revert back to current Pokemon
@@ -412,7 +556,7 @@ export default class Pokedex extends React.Component {
 		try {
 			baseData = await this.getRawData(pokemonToGet, 'pokemon', false);
 		} catch (e) {
-			console.error(`getData(${id}, ${name}) -> Could not retrieve Pokemon base data. Error: ${JSON.stringify(e)}`);
+			console.error(`getData(${id}, ${name}) -> Could not retrieve Pokemon base data. Error: ${JSON.stringify(e, jsonErrorReplacer)}`);
 			alert('Could not find Pokemon with provided name.');
 			this.getData(pokedexNumber, false);
 			return;
@@ -468,11 +612,11 @@ export default class Pokedex extends React.Component {
 							this.getRawData(formUrlArr[formUrlArr.length - 2], 'pokemon-form', false).then((formResponse) => {
 								resolveVariety(formResponse);
 							}, (e) => {
-								console.error(`getData(${id}, ${name}) -> Could not retrieve form data. Error: ${JSON.stringify(e)}`);
+								console.error(`getData(${id}, ${name}) -> Could not retrieve form data. Error: ${JSON.stringify(e, jsonErrorReplacer)}`);
 								rejectVariety(e);
 							});
 						}, (e) => {
-							console.error(`getData(${id}, ${name}) -> Could not retrieve variety data. Error: ${JSON.stringify(e)}`);
+							console.error(`getData(${id}, ${name}) -> Could not retrieve variety data. Error: ${JSON.stringify(e, jsonErrorReplacer)}`);
 							rejectVariety(e);
 						});
 					});
@@ -508,12 +652,11 @@ export default class Pokedex extends React.Component {
 
 					resolve();
 				}, (e) => {
-					console.error(`getData(${id}, ${name}) -> Could not resolve species data promises. Error: ${JSON.stringify(e)}`);
+					console.error(`getData(${id}, ${name}) -> Could not resolve species data promises. Error: ${JSON.stringify(e, jsonErrorReplacer)}`);
 					reject(e);
 				});
-
 			}, (e) => {
-				console.error(`getData(${id}, ${name}) -> Could not retrieve species data. Error: ${JSON.stringify(e)}`);
+				console.error(`getData(${id}, ${name}) -> Could not retrieve species data. Error: ${JSON.stringify(e, jsonErrorReplacer)}`);
 				reject(e);
 			});
 		});
@@ -524,10 +667,10 @@ export default class Pokedex extends React.Component {
 				encounterData = data;
 				resolve();
 			}, (e) => {
-				console.error(`getData(${id}, ${name}) -> Could not process encounter data. Error: ${JSON.stringify(e)}`);
+				console.error(`getData(${id}, ${name}) -> Could not process encounter data. Error: ${JSON.stringify(e, jsonErrorReplacer)}`);
 				reject(e);
 			}), (e) => {
-				console.error(`getData(${id}, ${name}) -> Could not retrieve encounter data. Error: ${JSON.stringify(e)}`);
+				console.error(`getData(${id}, ${name}) -> Could not retrieve encounter data. Error: ${JSON.stringify(e, jsonErrorReplacer)}`);
 				reject(e);
 			});
 		});
@@ -574,7 +717,7 @@ export default class Pokedex extends React.Component {
 		try {
 			responses = await Promise.all(promises);
 		} catch (e) {
-			console.error(`getData(${id}, ${name}) -> Could not resolve base data promises. Error: ${JSON.stringify(e)}`);
+			console.error(`getData(${id}, ${name}) -> Could not resolve base data promises. Error: ${JSON.stringify(e, jsonErrorReplacer)}`);
 			alert('Error fetching Pokemon data.');
 			this.getData(pokedexNumber, false);
 			return;
@@ -724,7 +867,7 @@ export default class Pokedex extends React.Component {
 
 							processedEvolutionDetails.push(evolutionDetail);
 						}, (e) => {
-							console.error(`processEvolution(${evolution.species.name}) -> Could not retrieve evolution detail data. Error: ${JSON.stringify(e)}`);
+							console.error(`processEvolution(${evolution.species.name}) -> Could not retrieve evolution detail data. Error: ${JSON.stringify(e, jsonErrorReplacer)}`);
 							reject(e);
 						});
 					}
@@ -740,11 +883,11 @@ export default class Pokedex extends React.Component {
 					// Return evolves_to in order to loop through again
 					resolve(evolution.evolves_to);
 				}, (e) => {
-					console.error(`processEvolution(${evolution.species.name}) -> Could not retrieve base data. Error: ${JSON.stringify(e)}`);
+					console.error(`processEvolution(${evolution.species.name}) -> Could not retrieve base data. Error: ${JSON.stringify(e, jsonErrorReplacer)}`);
 					reject(e);
 				});
 			}, (e) => {
-				console.error(`processEvolution(${evolution.species.name}) -> Could not retrieve species data. Error: ${JSON.stringify(e)}`);
+				console.error(`processEvolution(${evolution.species.name}) -> Could not retrieve species data. Error: ${JSON.stringify(e, jsonErrorReplacer)}`);
 				reject(e);
 			});
 		});
@@ -869,11 +1012,11 @@ export default class Pokedex extends React.Component {
 
 					resolve();
 				}, (e) => {
-					console.error(`processEncounterData(${rawLocation.location_area.name}) -> Could not retrieve location data. Error: ${JSON.stringify(e)}`);
+					console.error(`processEncounterData(${rawLocation.location_area.name}) -> Could not retrieve location data. Error: ${JSON.stringify(e, jsonErrorReplacer)}`);
 					reject(e);
 				});
 			}, (e) => {
-				console.error(`processEncounterData(${rawLocation.location_area.name}) -> Could not retrieve location area or version data. Error: ${JSON.stringify(e)}`);
+				console.error(`processEncounterData(${rawLocation.location_area.name}) -> Could not retrieve location area or version data. Error: ${JSON.stringify(e, jsonErrorReplacer)}`);
 				reject(e);
 			});
 		});
@@ -957,7 +1100,7 @@ export default class Pokedex extends React.Component {
 
 				resolve();
 			}, (e) => {
-				console.error(`processMoveData -> Could not retrieve move data. Error: ${JSON.stringify(e)}`);
+				console.error(`processMoveData -> Could not retrieve move data. Error: ${JSON.stringify(e, jsonErrorReplacer)}`);
 				reject(e);
 			});
 		});
@@ -1082,6 +1225,7 @@ export default class Pokedex extends React.Component {
 			varietyData,
 			eggGroupData,
 			dataReady,
+			showWalkthrough,
 		} = this.state;
 
 		// Declare variables for rendering
@@ -1468,6 +1612,12 @@ export default class Pokedex extends React.Component {
 
 		return (
 			<div className="container">
+				<Steps
+					enabled={showWalkthrough}
+					steps={walkthroughSteps}
+					initialStep={0}
+					onExit={this.onWalkthroughExit}
+				/>
 				<div className="left-screen">
 					<div className="left-screen-header">
 						<div className="lights-container">
@@ -1588,7 +1738,9 @@ export default class Pokedex extends React.Component {
 						</div>
 						<div className="left-screen-footer">
 							<div className="left-screen-footer-left-col">
-								<PowerButton />
+								<WalkthroughButton
+									clickHandler={this.onWalkthroughToggle}
+								/>
 							</div>
 							<div className="left-screen-footer-middle-col">
 								<div className="left-screen-footer-row">
@@ -1640,94 +1792,98 @@ export default class Pokedex extends React.Component {
 						<div className="right-lid-right" />
 					</div>
 					<div className="right-lid-bottom">
-						<div className="right-lid-bottom-left-col" />
-						<div className="right-lid-bottom-right-col" />
+						<div className="right-lid-bottom-row">
+							<div className="right-lid-bottom-left-col" />
+							<div className="right-lid-bottom-right-col" />
+						</div>
 					</div>
 					<div className="right-screen-content">
-						<div className="secondary-display-wrapper" id="secondary_display">
-							{!dataReady ? (
-								<div className="flex-center">
-									<Wave color="#fff" />
-								</div>
-							) : (
-								<SecondaryDisplay
-									activeDisplay={activeSecondaryDisplay}
-									flavourText={flavourText}
-									statistics={processedStatsArr}
-									heightWeight={heightWeightArr}
-									typeEffectiveness={typeEffectivenessObj}
-									abilities={abilities}
-									encounters={encounterArr}
-									noWildEncounters={encounterData.length === 0}
-									evolutionChain={evolutionData}
-									moves={moveArr}
-									varieties={varietyData}
-									eggGroups={eggGroupData}
-								/>
-							)}
-						</div>
-						<div className="grid-button-container">
-							<GridButton clickHandler={this.onGridButtonClick} screen="flavourText" />
-							<GridButton clickHandler={this.onGridButtonClick} screen="statistics" />
-							<GridButton clickHandler={this.onGridButtonClick} screen="heightWeight" />
-							<GridButton clickHandler={this.onGridButtonClick} screen="typeEffectiveness" />
-							<GridButton clickHandler={this.onGridButtonClick} screen="abilities" />
-							<GridButton clickHandler={this.onGridButtonClick} screen="encounters" />
-							<GridButton clickHandler={this.onGridButtonClick} screen="evolutionChain" />
-							<GridButton clickHandler={this.onGridButtonClick} screen="moves" />
-							<GridButton clickHandler={this.onGridButtonClick} screen="varieties" />
-							<GridButton clickHandler={this.onGridButtonClick} screen="eggGroups" />
-						</div>
-						<div className="misc-button-container">
-							<div className="misc-button-left-col">
-								<div
-									className="white-grid-button"
-									onClick={this.scrollUp}
-									role="button"
-									tabIndex={0}
-									aria-label="Scroll secondary display up"
-									onKeyDown={this.onKeyDown}
-								/>
-								<div
-									className="white-grid-button"
-									onClick={this.scrollDown}
-									role="button"
-									tabIndex={0}
-									aria-label="Scroll secondary display down"
-									onKeyDown={this.onKeyDown}
-								/>
-							</div>
-							<div className="misc-button-right-col">
-								<div className="misc-button-row">
-									<SlimButton />
-									<SlimButton noMargin />
-								</div>
-								<div className="misc-button-row">
-									<ConfirmButton clickHandler={this.onConfirmButtonClick} />
-								</div>
-							</div>
-						</div>
-						<div className="type-display-container">
-							<div className="type-display-wrapper">
+						<div className="right-screen-content-wrapper">
+							<div className="secondary-display-wrapper" id="secondary_display">
 								{!dataReady ? (
 									<div className="flex-center">
 										<Wave color="#fff" />
 									</div>
 								) : (
-									<TypeDisplay type={typeOne} />
+									<SecondaryDisplay
+										activeDisplay={activeSecondaryDisplay}
+										flavourText={flavourText}
+										statistics={processedStatsArr}
+										heightWeight={heightWeightArr}
+										typeEffectiveness={typeEffectivenessObj}
+										abilities={abilities}
+										encounters={encounterArr}
+										noWildEncounters={encounterData.length === 0}
+										evolutionChain={evolutionData}
+										moves={moveArr}
+										varieties={varietyData}
+										eggGroups={eggGroupData}
+									/>
 								)}
 							</div>
-							<div className="type-display-wrapper">
-								{!dataReady ? (
-									<div className="flex-center">
-										<Wave color="#fff" />
+							<div className="grid-button-container">
+								<GridButton clickHandler={this.onGridButtonClick} screen="flavourText" />
+								<GridButton clickHandler={this.onGridButtonClick} screen="statistics" />
+								<GridButton clickHandler={this.onGridButtonClick} screen="heightWeight" />
+								<GridButton clickHandler={this.onGridButtonClick} screen="typeEffectiveness" />
+								<GridButton clickHandler={this.onGridButtonClick} screen="abilities" />
+								<GridButton clickHandler={this.onGridButtonClick} screen="encounters" />
+								<GridButton clickHandler={this.onGridButtonClick} screen="evolutionChain" />
+								<GridButton clickHandler={this.onGridButtonClick} screen="moves" />
+								<GridButton clickHandler={this.onGridButtonClick} screen="varieties" />
+								<GridButton clickHandler={this.onGridButtonClick} screen="eggGroups" />
+							</div>
+							<div className="misc-button-container">
+								<div className="misc-button-left-col">
+									<div
+										className="white-grid-button up"
+										onClick={this.scrollUp}
+										role="button"
+										tabIndex={0}
+										aria-label="Scroll secondary display up"
+										onKeyDown={this.onKeyDown}
+									/>
+									<div
+										className="white-grid-button down"
+										onClick={this.scrollDown}
+										role="button"
+										tabIndex={0}
+										aria-label="Scroll secondary display down"
+										onKeyDown={this.onKeyDown}
+									/>
+								</div>
+								<div className="misc-button-right-col">
+									<div className="misc-button-row">
+										<SlimButton />
+										<SlimButton noMargin />
 									</div>
-								) : (
-									<>
-										{typeTwo
-											&& <TypeDisplay type={typeTwo} />}
-									</>
-								)}
+									<div className="misc-button-row">
+										<ConfirmButton clickHandler={this.onConfirmButtonClick} />
+									</div>
+								</div>
+							</div>
+							<div className="type-display-container">
+								<div className="type-display-wrapper">
+									{!dataReady ? (
+										<div className="flex-center">
+											<Wave color="#fff" />
+										</div>
+									) : (
+										<TypeDisplay type={typeOne} />
+									)}
+								</div>
+								<div className="type-display-wrapper">
+									{!dataReady ? (
+										<div className="flex-center">
+											<Wave color="#fff" />
+										</div>
+									) : (
+										<>
+											{typeTwo
+												&& <TypeDisplay type={typeTwo} />}
+										</>
+									)}
+								</div>
 							</div>
 						</div>
 					</div>

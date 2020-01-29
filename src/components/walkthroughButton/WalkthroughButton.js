@@ -2,33 +2,31 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import '../../styles/app.scss';
 
-const GridButton = (props) => {
+const WalkthroughButton = (props) => {
 	const {
-		screen,
 		clickHandler,
 	} = props;
 
 	const onClick = () => {
-		clickHandler(screen);
+		clickHandler();
 	};
 
 	const onKeyDown = () => {};
 
 	return (
 		<div
-			className={`grid-button ${screen}`}
+			className="walkthrough-button"
 			onClick={onClick}
 			role="button"
 			tabIndex={0}
-			aria-label="Grid button"
+			aria-label="Toggle walkthrough"
 			onKeyDown={onKeyDown}
 		/>
 	);
 };
 
-GridButton.propTypes = {
-	screen: PropTypes.string.isRequired,
+WalkthroughButton.propTypes = {
 	clickHandler: PropTypes.func.isRequired,
 };
 
-export default GridButton;
+export default WalkthroughButton;

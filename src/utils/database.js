@@ -1,3 +1,5 @@
+import { jsonErrorReplacer } from './common';
+
 export default class Database {
 	constructor() {
 		this.db = null;
@@ -8,14 +10,14 @@ export default class Database {
 			const request = indexedDB.open('pokemon', 1);
 
 			request.onerror = (event) => {
-				console.error(`Database.start() -> Failed to start database. Error: ${JSON.stringify(event.target.error)}`);
+				console.error(`Database.start() -> Failed to start database. Error: ${JSON.stringify(event.target.error, jsonErrorReplacer)}`);
 				reject(event.target.error);
 			};
 
 			request.onsuccess = (event) => {
 				this.db = event.target.result;
 				this.db.onerror = (dbEvent) => {
-					console.error(`Database.onerror -> Caught error on database instance. Error: ${dbEvent.target.error}`);
+					console.error(`Database.onerror -> Caught error on database instance. Error: ${JSON.stringify(dbEvent.target.error, jsonErrorReplacer)}`);
 				};
 				resolve();
 			};
@@ -117,7 +119,7 @@ export default class Database {
 			};
 
 			request.onerror = (event) => {
-				console.error(`Database.createTransaction(${data.id}, ${store}) -> Failed to write to database. Error: ${JSON.stringify(event.target.error)}`);
+				console.error(`Database.createTransaction(${data.id}, ${store}) -> Failed to write to database. Error: ${JSON.stringify(event.target.error, jsonErrorReplacer)}`);
 				reject(event.target.error);
 			};
 		});
@@ -134,7 +136,7 @@ export default class Database {
 			};
 
 			request.onerror = (event) => {
-				console.error(`Database.readTransaction(${key}, ${store}) -> Failed to read from database. Error: ${JSON.stringify(event.target.error)}`);
+				console.error(`Database.readTransaction(${key}, ${store}) -> Failed to read from database. Error: ${JSON.stringify(event.target.error, jsonErrorReplacer)}`);
 				reject(event.target.error);
 			};
 		});
@@ -164,13 +166,13 @@ export default class Database {
 				};
 
 				putRequest.onerror = (updateEvent) => {
-					console.error(`Database.updateTransaction(${key}, ${store}) -> Failed to update database. Error: ${JSON.stringify(updateEvent.target.error)}`);
+					console.error(`Database.updateTransaction(${key}, ${store}) -> Failed to update database. Error: ${JSON.stringify(updateEvent.target.error, jsonErrorReplacer)}`);
 					reject(updateEvent.target.error);
 				};
 			};
 
 			readRequest.onerror = (event) => {
-				console.error(`Database.updateTransaction(${key}, ${store}) -> Failed to read from database. Error: ${JSON.stringify(event.target.error)}`);
+				console.error(`Database.updateTransaction(${key}, ${store}) -> Failed to read from database. Error: ${JSON.stringify(event.target.error, jsonErrorReplacer)}`);
 				reject(event.target.error);
 			};
 		});
@@ -186,7 +188,7 @@ export default class Database {
 			};
 
 			request.onerror = (event) => {
-				console.error(`Database.deleteTransaction(${key}, ${store}) -> Failed to delete from database. Error: ${JSON.stringify(event.target.error)}`);
+				console.error(`Database.deleteTransaction(${key}, ${store}) -> Failed to delete from database. Error: ${JSON.stringify(event.target.error, jsonErrorReplacer)}`);
 				reject(event.target.error);
 			};
 		});

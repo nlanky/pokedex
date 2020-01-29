@@ -1,4 +1,4 @@
-.power-button {
+.walkthrough-button {
 	width: 2.34375rem;
 	height: 2.34375rem;
 	background-color: $darkGrey;
@@ -7,7 +7,7 @@
 }
 
 @media only screen and (min-width: 500px) {
-	.power-button {
+	.walkthrough-button {
 		width: 3.125rem;
 		height: 3.125rem;
 		background-color: $darkGrey;

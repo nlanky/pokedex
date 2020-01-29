@@ -10,7 +10,7 @@ const generatePokemonTypeEffectiveness = (typeOneDamageRelations, typeTwoDamageR
 
 	// Function to add missing types from object with normal effectiveness
 	const addMissingNormalDamage = () => {
-		for (let i = 0; i < typeArr.length; i++) {
+		for (let i = 0; i < typeArr.length; i += 1) {
 			const type = typeArr[i];
 			if (typeof typeEffectivenessObj[type] === 'undefined') typeEffectivenessObj[type] = 1;
 		}
@@ -91,12 +91,13 @@ const generatePokemonTypeEffectiveness = (typeOneDamageRelations, typeTwoDamageR
 
 			// Only display ability text if Pokemon has one of above abilities
 			const abilityText = `* If this Pokémon has ${abilityName}, the following type effectiveness multipliers apply: `;
-			if (affectedTypeArr.length > 0)
+			if (affectedTypeArr.length > 0) {
 				typeEffectivenessArr.push({
 					type: 'ability',
 					name: abilityName,
 					description: `${abilityText}${affectedTypeArr.join(', ')}`,
 				});
+			}
 		});
 	};
 
@@ -188,7 +189,7 @@ const generatePokemonTypeEffectiveness = (typeOneDamageRelations, typeTwoDamageR
 };
 
 const selectSecondaryDisplayFlavourText = (flavourTextArr, language) => {
-	const filteredflavourTextArr = flavourTextArr.filter(item => item.language.name === language);
+	const filteredflavourTextArr = flavourTextArr.filter((item) => item.language.name === language);
 	const sortedFlavourTextArr = [];
 	versionArr.forEach((value) => {
 		let found = false;
@@ -207,7 +208,7 @@ const selectSecondaryDisplayFlavourText = (flavourTextArr, language) => {
 };
 
 const selectAbilityFlavourText = (flavourTextArr, language) => {
-	const filteredflavourTextArr = flavourTextArr.filter(item => item.language.name === language);
+	const filteredflavourTextArr = flavourTextArr.filter((item) => item.language.name === language);
 	const sortedFlavourTextArr = [];
 	versionGroupArr.forEach((value) => {
 		let found = false;
@@ -230,41 +231,64 @@ const importPokemonCry = (pokedexNumber) => {
 	try {
 		require.resolve(`../assets/pokemon-cries/${pokedexNumber}.ogg`); // Checks if file exists
 		importedCry = import(/* webpackMode: "lazy" */ `../assets/pokemon-cries/${pokedexNumber}.ogg`);
-	} catch(e) {
-		console.error(`importPokemonCry(${pokedexNumber}) -> Could not find or process cry. Error: ${JSON.stringify(e)}`);
+	} catch (e) {
+		console.error(`importPokemonCry(${pokedexNumber}) -> Could not find or process cry. Error: ${JSON.stringify(e, jsonErrorReplacer)}`);
 		importedCry = import(/* webpackMode: "lazy" */ `../assets/pokemon-cries/unknown.ogg`);
 	}
-	
+
 	return importedCry;
 };
 
 /**
  * Checks if provided integer/string is a valid Pokedex number
- * @param {Number|String} number - Provided Pokedex number 
+ * @param {Number|String} number - Provided Pokedex number
  * @returns {Boolean} True if a valid Pokedex number, false otherwise
  */
 const isValidPokedexNumber = (number) => {
-	// Catch undefined etc. 
+	// Catch undefined etc.
 	if (!number) return false;
 
-	if (typeof number === 'string') {
+	let processedNumber = number;
+	if (typeof processedNumber === 'string') {
 		// Remove any whitespace
-		number = number.trim();
+		processedNumber = processedNumber.trim();
 
 		// Removes leading zeros
-		number = number.replace(/^0+/, '');
+		processedNumber = processedNumber.replace(/^0+/, '');
 
 		// Catch blank string
-		if (number === '') return false;
+		if (processedNumber === '') return false;
 	}
 
 	// Convert to number and truncate decimals
-	var n = Math.floor(Number(number));
-	
+	const n = Math.floor(Number(processedNumber));
+
 	// Checks number isn't infinity
 	// Checks number is between 1 and 807
 	return n !== Infinity && n > 0 && n <= maxPokedexNumber;
-}
+};
+
+/**
+ * Used as replacer parameter in JSON.stringify.
+ * Converts an Error instance into regular JSON for use in error reporting.
+ * @param {*} key - The key in object being stringified
+ * @param {*} value - The value in object being stringified
+ */
+const jsonErrorReplacer = (key, value) => {
+	if (value instanceof Error) {
+		return {
+			// Pull all enumerable properties, supporting properties on custom Errors
+			...value,
+
+			// Explicitly pull Error's non-enumerable properties
+			name: value.name,
+			message: value.message,
+			stack: value.stack,
+		};
+	}
+
+	return value;
+};
 
 export {
 	maxPokedexNumber,
@@ -273,4 +297,5 @@ export {
 	selectAbilityFlavourText,
 	importPokemonCry,
 	isValidPokedexNumber,
+	jsonErrorReplacer,
 };
