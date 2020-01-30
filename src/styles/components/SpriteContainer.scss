@@ -41,10 +41,23 @@
 	align-items: center;
 }
 
+@keyframes opacityAnimation {
+	from {
+		opacity: 0;
+	} to {
+		opacity: 1;
+	}
+}
+
 .sprite-wrapper img {
 	width: 7.5rem;
 	height: 7.5rem;
+	animation: opacityAnimation none 2s;
+}
 
+.nav-number-text {
+	color: #fff;
+	margin-top: 0.625rem;
 }
 
 @media only screen and (min-width: 500px) {

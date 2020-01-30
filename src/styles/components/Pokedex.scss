@@ -58,11 +58,6 @@ img {
 	border-right: 1px solid $darkGrey;
 }
 
-.left-screen-header {
-	display: flex;
-	min-height: 5.625rem;
-}
-
 .left-screen-footer {
 	display: flex;
 	flex-direction: row;
@@ -90,15 +85,6 @@ img {
 	flex-direction: row;
 }
 
-// Lights container
-.lights-container {
-	display: flex;
-	width: 50%;
-	border-bottom: 1px solid $darkGrey;
-	margin-left: 0.9375rem;
-	margin-top: 0.9375rem;
-}
-
 // Left screen display
 .main-display-wrapper {
 	position: relative;
@@ -124,47 +110,9 @@ img {
 	justify-content: space-between;
 }
 
-.nav-number-text {
-	color: #fff;
-	margin-top: 0.625rem;
-}
-
 .vent-container {
 	display: flex;
 	flex-direction: column;	
-}
-
-// Left lid top
-.lid-middle {
-	width: 20%;
-	display: flex;
-	position: relative;
-	flex-direction: column;
-}
-
-.lid-diagonal {
-	position: absolute;
-	width: 5.14857rem;
-	height: 1px;
-	background-color: $darkGrey;
-	transform: rotate(-33.11deg);
-	top: 4.1875rem;
-	left: -0.35rem;
-}
-
-.lid-right {
-	width: 30%;
-	margin-right: 0.9375rem;
-}
-
-.lid-right-top {
-	height: 2.8125rem;
-	border-bottom: 1px solid $darkGrey;
-}
-
-.lid-right-bottom {
-	height: 2.8125rem;
-	border-right: 1px solid $darkGrey;
 }
 
 // Right screen
@@ -187,80 +135,6 @@ img {
 	border-bottom: 1px solid $darkGrey;
 	border-left: 1px solid $darkGrey;
 	border-right: 1px solid $darkGrey;	
-}
-
-// Right lid top
-.right-lid-top {
-	height: 2.8125rem;
-}
-
-.right-lid-wrapper {
-	height: 2.8125rem;
-	display: flex;
-	flex-direction: row;
-}
-
-.right-lid-left {
-	width: 30%;
-	background-color: $red;
-	padding-left: 0.9375rem;
-	padding-top: 0.9375rem;
-	display: flex;
-}
-
-.right-lid-left-box {
-	border-left: 1px solid #000;
-	border-top: 1px solid #000;
-	flex: 1;
-}
-
-.right-lid-middle {
-	width: 20%;
-	position: relative;
-}
-
-.right-lid-middle-cut {
-	position: absolute;
-	bottom: 0;
-	left: 0;
-	border-top: 2.8125rem solid transparent;
-	border-left: 2.8125rem solid $red;
-}
-
-.right-lid-middle-diagonal {
-	position: absolute;
-	width: 3.825rem;
-	height: 1px;
-	background-color: $darkGrey;
-	transform: rotate(45deg);
-	top: 2.35rem;
-	left: -0.6rem;
-}
-
-.right-lid-right {
-	width: 50%;
-}
-
-.right-lid-bottom {
-	background-color: $red;
-}
-
-.right-lid-bottom-row {
-	display: flex;
-	flex-direction: row;
-	height: 0.9375rem;
-	margin-left: 0.9375rem;
-	margin-right: 0.9375rem;
-	border-left: 1px solid $darkGrey;
-}
-
-.right-lid-bottom-left-col {
-	width: 40%;
-}
-
-.right-lid-bottom-right-col {
-	width: 60%;
-	border-bottom: 1px solid $darkGrey;
 }
 
 // Miscellaneous buttons
@@ -305,38 +179,6 @@ img {
 	}
 }
 
-// Hinge
-.hinge-container {
-	display: none;
-	width: 2.8125rem;
-	flex-direction: column;
-	border-right: 1px solid $darkGrey;
-	background-color: $red;
-}
-
-.hinge-top {
-	height: 2.8125rem;
-	border-bottom: 1px solid $darkGrey;
-	border-left: 1px solid $darkGrey;	
-}
-
-.hinge-middle {
-	flex: 1;
-	border-left: 1px solid $darkGrey;
-}
-
-.hinge-bottom {
-	height: 2.8125rem;
-	border-top: 1px solid $darkGrey;
-	border-left: 1px solid $darkGrey;
-}
-
-.hinge-bottom-lid {
-	height: 0.9375rem;
-	border-top: 1px solid $darkGrey;
-	border-left: 1px solid $darkGrey;
-}
-
 // Walkthrough
 .introjs-helperNumberLayer {
 	background-image: linear-gradient(to bottom, $red 50%, #fff 50%);
@@ -359,10 +201,6 @@ img {
 		padding: 3.125rem 2rem 2rem 2rem;
 		margin: 0 1.25rem 1.25rem 1.25rem;
 	}
-	
-	.left-screen-header {
-		min-height: 7.5rem;
-	}
 
 	.left-screen-footer-left-col {
 		margin-right: 1.875rem;
@@ -370,12 +208,6 @@ img {
 	
 	.left-screen-footer-middle-col {
 		margin-right: 1.875rem;
-	}
-
-	// Lights container
-	.lights-container {
-		margin-left: 1.25rem;
-		margin-top: 1.25rem;
 	}
 
 	// Left screen display
@@ -391,26 +223,6 @@ img {
 	
 	.main-display-footer {
 		height: 2.8125rem;
-	}	
-
-	// Left lid top
-	.lid-diagonal {
-		width: 6.864765rem;
-		transform: rotate(-32.4673deg);
-		top: 5.5625rem;
-		left: -0.5625rem;
-	}
-
-	.lid-right {
-		margin-right: 1.25rem;
-	}
-
-	.lid-right-top {
-		height: 3.75rem;
-	}
-
-	.lid-right-bottom {
-		height: 3.75rem;
 	}
 	
 	// Right screen
@@ -418,37 +230,6 @@ img {
 		min-height: 35.625rem;
 		padding: 1.875rem;
 		margin: 0 1.25rem 1.25rem 1.25rem;
-	}
-
-	// Right lid top
-	.right-lid-top {
-		height: 3.75rem;
-	}
-
-	.right-lid-wrapper {
-		height: 3.75rem;
-	}
-
-	.right-lid-left {
-		padding-left: 1.25rem;
-		padding-top: 1.25rem;
-	}
-
-	.right-lid-middle-cut {
-		border-top-width: 3.75rem;
-		border-left-width: 3.75rem;
-	}
-
-	.right-lid-middle-diagonal {
-		width: 5.1rem;
-		top: 3.05rem;
-		left: -0.85rem;
-	}
-
-	.right-lid-bottom-row {
-		height: 1.25rem;
-		margin-left: 1.25rem;
-		margin-right: 1.25rem;
 	}
 	
 	// Miscellaneous buttons
@@ -459,23 +240,6 @@ img {
 	.white-grid-button {
 		width: 5.25rem;
 		height: 3.75rem;
-	}
-	
-	// Hinge
-	.hinge-container {
-		width: 3.75rem;
-	}
-	
-	.hinge-top {
-		height: 3.75rem;	
-	}
-	
-	.hinge-bottom {
-		height: 3.75rem;
-	}
-	
-	.hinge-bottom-lid {
-		height: 1.25rem;
 	}
 }
 

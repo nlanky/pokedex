@@ -2,8 +2,9 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import '../../styles/app.scss';
 
-const ConfirmButton = (props) => {
+const ScrollButton = (props) => {
 	const {
+		directionUp,
 		clickHandler,
 	} = props;
 
@@ -15,18 +16,23 @@ const ConfirmButton = (props) => {
 
 	return (
 		<div
-			className="confirm-button"
+			className={`white-grid-button ${directionUp ? 'up' : 'down'}`}
 			onClick={onClick}
 			role="button"
 			tabIndex={0}
-			aria-label="Random Pokemon button"
+			aria-label={`Scroll secondary display ${directionUp ? 'up' : 'down'}`}
 			onKeyDown={onKeyDown}
 		/>
 	);
 };
 
-ConfirmButton.propTypes = {
+ScrollButton.propTypes = {
+	directionUp: PropTypes.bool,
 	clickHandler: PropTypes.func.isRequired,
 };
 
-export default ConfirmButton;
+ScrollButton.defaultProps = {
+	directionUp: false,
+};
+
+export default ScrollButton;

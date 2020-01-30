@@ -3,6 +3,7 @@ import { jsonErrorReplacer } from './common';
 export default class Database {
 	constructor() {
 		this.db = null;
+		this.attemptedDelete = false;
 	}
 
 	start() {
@@ -10,12 +11,36 @@ export default class Database {
 			const request = indexedDB.open('pokemon', 1);
 
 			request.onerror = (event) => {
-				console.error(`Database.start() -> Failed to start database. Error: ${JSON.stringify(event.target.error, jsonErrorReplacer)}`);
-				reject(event.target.error);
+				const {
+					error,
+				} = event.target;
+
+				console.error(`Database.start() -> Failed to start database. Error: ${JSON.stringify(error, jsonErrorReplacer)}`);
+
+				// If this is a version error, try deleting the database once
+				if (error.name === 'VersionError' && !this.attemptedDelete) {
+					this.attemptedDelete = true;
+					const deleteRequest = indexedDB.deleteDatabase('pokemon');
+					deleteRequest.onsuccess = () => {
+						// After successful deletion, try and start again
+						this.start().then(() => resolve(), (e) => {
+							console.error(`Database.start() -> Failed to start database after successful deletion. Error: ${JSON.stringify(e, jsonErrorReplacer)}`);
+							reject(e);
+						});
+					};
+					deleteRequest.onerror = (e) => {
+						console.error(`Database.start() -> Could not delete database after catching VersionError. Error: ${JSON.stringify(e, jsonErrorReplacer)}`);
+						reject(e);
+					};
+					return;
+				}
+
+				reject(error);
 			};
 
 			request.onsuccess = (event) => {
 				this.db = event.target.result;
+				this.attemptedDelete = false;
 				this.db.onerror = (dbEvent) => {
 					console.error(`Database.onerror -> Caught error on database instance. Error: ${JSON.stringify(dbEvent.target.error, jsonErrorReplacer)}`);
 				};
@@ -30,7 +55,7 @@ export default class Database {
 						keyPath: 'id',
 					});
 				}
-				if (!this.db.objectStoreNames.contains('pokemon_species')) {
+				if (!this.db.objectStoreNames.contains('pokemon-species')) {
 					this.db.createObjectStore('pokemon-species', {
 						keyPath: 'id',
 					});
@@ -50,12 +75,12 @@ export default class Database {
 						keyPath: 'id',
 					});
 				}
-				if (!this.db.objectStoreNames.contains('evolution_chain')) {
+				if (!this.db.objectStoreNames.contains('evolution-chain')) {
 					this.db.createObjectStore('evolution-chain', {
 						keyPath: 'id',
 					});
 				}
-				if (!this.db.objectStoreNames.contains('location_area')) {
+				if (!this.db.objectStoreNames.contains('location-area')) {
 					this.db.createObjectStore('location-area', {
 						keyPath: 'id',
 					});
@@ -105,6 +130,11 @@ export default class Database {
 						keyPath: 'id',
 					});
 				}
+				if (!this.db.objectStoreNames.contains('settings')) {
+					this.db.createObjectStore('settings', {
+						keyPath: 'id',
+					});
+				}
 			};
 		});
 	}
@@ -119,8 +149,12 @@ export default class Database {
 			};
 
 			request.onerror = (event) => {
-				console.error(`Database.createTransaction(${data.id}, ${store}) -> Failed to write to database. Error: ${JSON.stringify(event.target.error, jsonErrorReplacer)}`);
-				reject(event.target.error);
+				const {
+					error,
+				} = event.target;
+
+				console.error(`Database.createTransaction(${data.id}, ${store}) -> Failed to write to database. Error: ${JSON.stringify(error, jsonErrorReplacer)}`);
+				reject(error);
 			};
 		});
 	}
@@ -136,8 +170,12 @@ export default class Database {
 			};
 
 			request.onerror = (event) => {
-				console.error(`Database.readTransaction(${key}, ${store}) -> Failed to read from database. Error: ${JSON.stringify(event.target.error, jsonErrorReplacer)}`);
-				reject(event.target.error);
+				const {
+					error,
+				} = event.target;
+
+				console.error(`Database.readTransaction(${key}, ${store}) -> Failed to read from database. Error: ${JSON.stringify(error, jsonErrorReplacer)}`);
+				reject(error);
 			};
 		});
 	}
@@ -151,6 +189,16 @@ export default class Database {
 			readRequest.onsuccess = (event) => {
 				// Retrieved current data for provided key
 				const updatedData = event.target.result;
+
+				// Data didn't exist so just call createTransaction
+				if (typeof updatedData === 'undefined') {
+					this.createTransaction(store, data).then((result) => {
+						resolve(result);
+					}, (e) => {
+						reject(e);
+					});
+					return;
+				}
 
 				// Now update data for key
 				const newDataKeys = Object.keys(data);
@@ -166,14 +214,22 @@ export default class Database {
 				};
 
 				putRequest.onerror = (updateEvent) => {
-					console.error(`Database.updateTransaction(${key}, ${store}) -> Failed to update database. Error: ${JSON.stringify(updateEvent.target.error, jsonErrorReplacer)}`);
-					reject(updateEvent.target.error);
+					const {
+						error,
+					} = updateEvent.target;
+
+					console.error(`Database.updateTransaction(${key}, ${store}) -> Failed to update database. Error: ${JSON.stringify(error, jsonErrorReplacer)}`);
+					reject(error);
 				};
 			};
 
 			readRequest.onerror = (event) => {
-				console.error(`Database.updateTransaction(${key}, ${store}) -> Failed to read from database. Error: ${JSON.stringify(event.target.error, jsonErrorReplacer)}`);
-				reject(event.target.error);
+				const {
+					error,
+				} = event.target;
+
+				console.error(`Database.updateTransaction(${key}, ${store}) -> Failed to read from database. Error: ${JSON.stringify(error, jsonErrorReplacer)}`);
+				reject(error);
 			};
 		});
 	}
@@ -188,8 +244,12 @@ export default class Database {
 			};
 
 			request.onerror = (event) => {
-				console.error(`Database.deleteTransaction(${key}, ${store}) -> Failed to delete from database. Error: ${JSON.stringify(event.target.error, jsonErrorReplacer)}`);
-				reject(event.target.error);
+				const {
+					error,
+				} = event.target;
+
+				console.error(`Database.deleteTransaction(${key}, ${store}) -> Failed to delete from database. Error: ${JSON.stringify(error, jsonErrorReplacer)}`);
+				reject(error);
 			};
 		});
 	}

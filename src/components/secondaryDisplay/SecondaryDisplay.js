@@ -2,6 +2,8 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import '../../styles/app.scss';
 
+import Sprite from '../spriteContainer/components/sprite';
+
 import typeColourObj from '../../utils/typeColours';
 
 const FlavourTextComponent = (props) => {
@@ -30,7 +32,7 @@ const StatisticsComponent = (props) => {
 				} = stat;
 
 				return (
-					<div className="statistic-wrapper" key={stat.name}>
+					<div className="statistic-wrapper" key={name}>
 						<div>{name}</div>
 						<div>{base_stat}</div>
 					</div>
@@ -333,25 +335,27 @@ const EvolutionChainComponent = (props) => {
 
 	const Evolution = (evoProps) => {
 		const {
-			evolution,
-		} = evoProps;
+			stage,
+			name,
+			sprite,
+			evolutionDetails,
+		} = evoProps.evolution;
 
-		const evolutionStage = evolution.stage;
 		let evolutionStageText = 'Unevolved';
-		if (evolutionStage === 1) evolutionStageText = 'First Evolution';
-		if (evolutionStage === 2) evolutionStageText = 'Second Evolution';
+		if (stage === 1) evolutionStageText = 'First Evolution';
+		if (stage === 2) evolutionStageText = 'Second Evolution';
 
 		return (
-			<div className="evolution-wrapper" key={evolution.name}>
+			<div className="evolution-wrapper" key={name}>
 				<div className="evolution-sprite-wrapper">
-					<img
-						alt={`${evolution.name} sprite`}
-						src={evolution.sprite}
+					<Sprite
+						spriteUrl={sprite}
+						altText={`${name} sprite`}
 					/>
 				</div>
-				<div>{evolution.name}</div>
+				<div>{name}</div>
 				<div>{evolutionStageText}</div>
-				{evolution.evolutionDetails.map((details, index) => <EvolutionDetails details={details} key={index} />)}
+				{evolutionDetails.map((details, index) => <EvolutionDetails details={details} key={index} />)}
 			</div>
 		);
 	};
@@ -434,7 +438,7 @@ const EvolutionChainComponent = (props) => {
 
 	return (
 		<div className="evolution-chain-container">
-			{evolutionChain.map((evolution, index) => <Evolution evolution={evolution} key={index} noOfEvolution={index} />)}
+			{evolutionChain.map((evolution, index) => <Evolution evolution={evolution} key={index} />)}
 		</div>
 	);
 };
@@ -539,14 +543,15 @@ const VarietiesComponent = (props) => {
 			{varieties.map((variety) => {
 				const {
 					name,
+					sprite,
 				} = variety;
 
 				return (
 					<div className="variety-wrapper" key={name}>
 						<div className="variety-sprite-wrapper">
-							<img
-								alt={`${name} sprite`}
-								src={variety.sprite}
+							<Sprite
+								spriteUrl={sprite}
+								altText={`${name} sprite`}
 							/>
 						</div>
 						<div>{name}</div>
@@ -568,6 +573,7 @@ const EggGroupsComponent = (props) => {
 			{eggGroups.map((eggGroup) => {
 				const {
 					name,
+					numberSpecies,
 				} = eggGroup;
 
 				return (
@@ -575,7 +581,7 @@ const EggGroupsComponent = (props) => {
 						<div className="egg-group-name">{name}</div>
 						<div className="egg-group-species">
 							Pok&eacute;mon in group:
-							{` ${eggGroup.numberSpecies}`}
+							{` ${numberSpecies}`}
 						</div>
 					</div>
 				);

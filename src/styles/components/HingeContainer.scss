@@ -1,0 +1,54 @@
+.hinge-container {
+	display: none;
+	width: 2.8125rem;
+	flex-direction: column;
+	border-right: 1px solid $darkGrey;
+	background-color: $red;
+}
+
+.hinge-top {
+	height: 2.8125rem;
+	border-bottom: 1px solid $darkGrey;
+	border-left: 1px solid $darkGrey;	
+}
+
+.hinge-middle {
+	flex: 1;
+	border-left: 1px solid $darkGrey;
+}
+
+.hinge-bottom {
+	height: 2.8125rem;
+	border-top: 1px solid $darkGrey;
+	border-left: 1px solid $darkGrey;
+}
+
+.hinge-bottom-lid {
+	height: 0.9375rem;
+	border-top: 1px solid $darkGrey;
+	border-left: 1px solid $darkGrey;
+}
+
+@media only screen and (min-width: 500px) {
+	.hinge-container {
+		width: 3.75rem;
+	}
+	
+	.hinge-top {
+		height: 3.75rem;
+	}
+	
+	.hinge-bottom {
+		height: 3.75rem;
+	}
+	
+	.hinge-bottom-lid {
+		height: 1.25rem;
+	}
+}
+
+@media only screen and (min-width: 1060px) {
+	.hinge-container {
+		display: flex;
+	}
+}

@@ -1,18 +1,16 @@
+// React
 import React from 'react';
 
+// node modules
 import axios from 'axios';
 import { Wave } from 'better-react-spinkit';
 import 'intro.js/introjs.css';
 import { Steps } from 'intro.js-react';
-import {
-	FaChevronLeft,
-	FaChevronRight,
-	FaChevronUp,
-	FaChevronDown,
-} from 'react-icons/fa';
 
+// Database
 import Database from '../../utils/database';
 
+// Common functions
 import {
 	maxPokedexNumber,
 	generatePokemonTypeEffectiveness,
@@ -23,22 +21,26 @@ import {
 	jsonErrorReplacer,
 } from '../../utils/common';
 
-import '../../styles/app.scss';
-
-import MicLight from '../micLight';
-import Sprite from '../sprite';
-import NumberDisplay from '../numberDisplay';
-import TypeDisplay from '../typeDisplay';
-import SecondaryDisplay from '../secondaryDisplay';
+// Components
 import DirectionalPad from '../directionalPad';
-import IndicatorLight from '../indicatorLight';
 import GridButton from '../gridButton';
-import ConfirmButton from '../confirmButton';
+import HingeContainer from '../hingeContainer';
+import NumberDisplay from '../numberDisplay';
+import RandomiseButton from '../randomiseButton';
+import ScreenHeader from '../screenHeader';
+import ScrollButton from '../scrollButton';
+import SecondaryDisplay from '../secondaryDisplay';
 import SlimButton from '../slimButton';
-import Vent from '../vent';
 import SpriteButton from '../spriteButton';
+import SpriteContainer from '../spriteContainer';
+import TypeDisplay from '../typeDisplay';
+import Vent from '../vent';
 import WalkthroughButton from '../walkthroughButton';
 
+// CSS
+import '../../styles/app.scss';
+
+// Background image
 import background from '../../assets/images/background.jpg';
 
 // Useful object to ensure preferred order of sprites is correct
@@ -91,13 +93,23 @@ const walkthroughSteps = [
 		position: 'bottom',
 	},
 	{
+		element: '.slim-button.walkthroughFirstSprite',
+		intro: 'Go to the first sprite',
+		position: 'bottom',
+	},
+	{
+		element: '.slim-button.walkthroughLastSprite',
+		intro: 'Go to the last sprite',
+		position: 'bottom',
+	},
+	{
 		element: '.number-display-wrapper',
 		intro: 'Search for a Pok&eacute;mon using their name or Pok&eacute;dex number',
 		position: 'bottom',
 	},
 	{
 		element: '.dpad-wrapper',
-		intro: 'You can use the D-pad as an alternative to the arrows on the left display',
+		intro: 'Use the D-pad as an alternative to the arrows on the left display',
 		position: 'bottom',
 	},
 	{
@@ -161,13 +173,23 @@ const walkthroughSteps = [
 		position: 'bottom',
 	},
 	{
-		element: '.confirm-button',
+		element: '.slim-button.walkthroughScrollTop',
+		intro: 'Scroll to the top of the right display',
+		position: 'bottom',
+	},
+	{
+		element: '.slim-button.walkthroughScrollBottom',
+		intro: 'Scroll to the bottom of the right display',
+		position: 'bottom',
+	},
+	{
+		element: '.randomise-button',
 		intro: 'Go to a random Pok&eacute;mon',
 		position: 'bottom',
 	},
 ];
 
-// Background image
+// Setting background image that was imported
 document.getElementById('root').style.backgroundImage = `url('${background}')`;
 
 export default class Pokedex extends React.Component {
@@ -203,13 +225,17 @@ export default class Pokedex extends React.Component {
 		this.onNextSpriteClick = this.onNextSpriteClick.bind(this);
 		this.onPrevSpriteClick = this.onPrevSpriteClick.bind(this);
 		this.onGridButtonClick = this.onGridButtonClick.bind(this);
-		this.onConfirmButtonClick = this.onConfirmButtonClick.bind(this);
+		this.onRandomiseButtonClick = this.onRandomiseButtonClick.bind(this);
 		this.onSpriteButtonClick = this.onSpriteButtonClick.bind(this);
 		this.onPokemonInput = this.onPokemonInput.bind(this);
 		this.onPokemonInputBlur = this.onPokemonInputBlur.bind(this);
 		this.onPokemonInputClick = this.onPokemonInputClick.bind(this);
 		this.onWalkthroughToggle = this.onWalkthroughToggle.bind(this);
 		this.onWalkthroughExit = this.onWalkthroughExit.bind(this);
+		this.onSlimButtonOneClick = this.onSlimButtonOneClick.bind(this);
+		this.onSlimButtonTwoClick = this.onSlimButtonTwoClick.bind(this);
+		this.onSlimButtonThreeClick = this.onSlimButtonThreeClick.bind(this);
+		this.onSlimButtonFourClick = this.onSlimButtonFourClick.bind(this);
 		this.getRawData = this.getRawData.bind(this);
 		this.getData = this.getData.bind(this);
 		this.processEvolutionData = this.processEvolutionData.bind(this);
@@ -228,10 +254,31 @@ export default class Pokedex extends React.Component {
 		} = this.state;
 
 		// Initialise DB
-		database.start().then(() => {
-			// First load defaults to #1 (Bulbasaur)
-			this.getData(false, false);
-		}, (e) => {
+		database.start().then(() => (
+			// Check if user has seen walkthrough before
+			database.readTransaction('settings', 0).then((walkthroughSeen) => {
+				// If setting doesn't exist, show walkthrough and save setting to database
+				if (typeof walkthroughSeen === 'undefined') {
+					return database.createTransaction('settings', {
+						id: 0,
+						walkthroughSeen: true,
+					}).then(() => {
+						this.setState({
+							showWalkthrough: true,
+						});
+
+						// First load defaults to #1 (Bulbasaur)
+						return this.getData(false, false);
+					}, (e) => {
+						console.error(`Pokedex.componentDidMount -> Could not create setting in database. Error: ${JSON.stringify(e, jsonErrorReplacer)}`);
+					});
+				}
+
+				return this.getData(false, false);
+			}, (e) => {
+				console.error(`Pokedex.componentDidMount -> Could not retrieve settings from database. Error: ${JSON.stringify(e, jsonErrorReplacer)}`);
+			})
+		), (e) => {
 			console.error(`Pokedex.componentDidMount -> Database couldn't be opened. Error: ${JSON.stringify(e, jsonErrorReplacer)}`);
 		});
 	}
@@ -339,7 +386,7 @@ export default class Pokedex extends React.Component {
 		});
 	}
 
-	onConfirmButtonClick() {
+	onRandomiseButtonClick() {
 		const {
 			pokemonCry,
 			dataReady,
@@ -443,7 +490,53 @@ export default class Pokedex extends React.Component {
 	onWalkthroughExit() {
 		this.setState({
 			showWalkthrough: false,
-		})
+		});
+	}
+
+	onSlimButtonOneClick() {
+		const {
+			dataReady,
+		} = this.state;
+
+		if (!dataReady) return;
+
+		this.setState({
+			activeSprite: 0,
+		});
+	}
+
+	onSlimButtonTwoClick() {
+		const {
+			spriteArr,
+			dataReady,
+		} = this.state;
+
+		if (!dataReady) return;
+
+		this.setState({
+			activeSprite: spriteArr.length - 1,
+		});
+	}
+
+	onSlimButtonThreeClick() {
+		const {
+			dataReady,
+		} = this.state;
+
+		if (!dataReady) return;
+
+		document.getElementById('secondary_display').scrollTop = 0;
+	}
+
+	onSlimButtonFourClick() {
+		const {
+			dataReady,
+		} = this.state;
+
+		if (!dataReady) return;
+
+		const secondaryDisplay = document.getElementById('secondary_display');
+		secondaryDisplay.scrollTop = secondaryDisplay.scrollHeight;
 	}
 
 	/**
@@ -1189,9 +1282,7 @@ export default class Pokedex extends React.Component {
 
 		if (!dataReady) return;
 
-		const secondaryDisplay = document.getElementById('secondary_display');
-		if (!secondaryDisplay) return;
-		secondaryDisplay.scrollTop -= 20;
+		document.getElementById('secondary_display').scrollTop -= 20;
 	}
 
 	scrollDown() {
@@ -1201,9 +1292,7 @@ export default class Pokedex extends React.Component {
 
 		if (!dataReady) return;
 
-		const secondaryDisplay = document.getElementById('secondary_display');
-		if (!secondaryDisplay) return;
-		secondaryDisplay.scrollTop += 20;
+		document.getElementById('secondary_display').scrollTop += 20;
 	}
 
 	render() {
@@ -1619,113 +1708,25 @@ export default class Pokedex extends React.Component {
 					onExit={this.onWalkthroughExit}
 				/>
 				<div className="left-screen">
-					<div className="left-screen-header">
-						<div className="lights-container">
-							<MicLight />
-							<IndicatorLight colour="red" />
-							<IndicatorLight colour="yellow" />
-							<IndicatorLight colour="green" />
-						</div>
-						<div className="lid-middle">
-							<div className="lid-diagonal" />
-						</div>
-						<div className="lid-right">
-							<div className="lid-right-top" />
-							<div className="lid-right-bottom" />
-						</div>
-					</div>
+					<ScreenHeader left />
 					<div className="left-screen-content">
 						<div className="main-display-wrapper">
 							<div className="main-display-cut" />
-							<div className="sprite-container">
-								{!dataReady ? (
-									<div className="flex-center">
-										<Wave color="#fff" />
-									</div>
-								) : (
-									<>
-										<div className="sprite-top">
-											<div
-												className="sprite-cycle top"
-												onClick={this.onPrevSpriteClick}
-												role="button"
-												tabIndex={0}
-												aria-label="Previous sprite"
-												onKeyDown={this.onKeyDown}
-											>
-												{displayTopCycle
-													&& <FaChevronUp color="#fff" />}
-											</div>
-										</div>
-										<div className="sprite-middle">
-											<div
-												className="sprite-cycle left"
-												onClick={this.onPrevPokemonClick}
-												role="button"
-												tabIndex={0}
-												aria-label="Previous Pokemon"
-												onKeyDown={this.onKeyDown}
-											>
-												{displayLeftCycle
-													&& (
-														<>
-															<FaChevronLeft color="#fff" />
-															<span className="nav-number-text">
-																#
-																{displayLeftNumber}
-															</span>
-														</>
-													)}
-											</div>
-											<div className="sprite-wrapper">
-												{spriteArr.map((spriteUrl, index) => {
-													const isActiveSprite = activeSprite === spriteArr.indexOf(spriteUrl);
-													return (
-														<Sprite
-															spriteUrl={spriteUrl}
-															activeSprite={isActiveSprite}
-															key={index}
-														/>
-													);
-												})}
-											</div>
-											<div
-												className="sprite-cycle right"
-												onClick={this.onNextPokemonClick}
-												role="button"
-												tabIndex={0}
-												aria-label="Next Pokemon"
-												onKeyDown={this.onKeyDown}
-											>
-												{displayRightCycle
-													&& (
-														<>
-															<FaChevronRight color="#fff" />
-															<span className="nav-number-text">
-																#
-																{displayRightNumber}
-															</span>
-														</>
-													)}
-
-											</div>
-										</div>
-										<div className="sprite-bottom">
-											<div
-												className="sprite-cycle bottom"
-												onClick={this.onNextSpriteClick}
-												role="button"
-												tabIndex={0}
-												aria-label="Next sprite"
-												onKeyDown={this.onKeyDown}
-											>
-												{displayBottomCycle
-													&& <FaChevronDown color="#fff" />}
-											</div>
-										</div>
-									</>
-								)}
-							</div>
+							<SpriteContainer
+								dataReady={dataReady}
+								prevSprite={this.onPrevSpriteClick}
+								nextPokemon={this.onNextPokemonClick}
+								nextSprite={this.onNextSpriteClick}
+								prevPokemon={this.onPrevPokemonClick}
+								displayTopCycle={displayTopCycle}
+								displayRightCycle={displayRightCycle}
+								displayBottomCycle={displayBottomCycle}
+								displayLeftCycle={displayLeftCycle}
+								displayLeftNumber={displayLeftNumber}
+								displayRightNumber={displayRightNumber}
+								activeSprite={activeSprite}
+								spriteArr={spriteArr}
+							/>
 							<div className="main-display-footer">
 								<SpriteButton clickHandler={this.onSpriteButtonClick} />
 								<div className="vent-container">
@@ -1744,8 +1745,17 @@ export default class Pokedex extends React.Component {
 							</div>
 							<div className="left-screen-footer-middle-col">
 								<div className="left-screen-footer-row">
-									<SlimButton colour="#D72113" />
-									<SlimButton colour="#fff" noMargin />
+									<SlimButton
+										colour="#D72113"
+										clickHandler={this.onSlimButtonOneClick}
+										label="walkthroughFirstSprite"
+									/>
+									<SlimButton
+										colour="#fff"
+										noMargin
+										clickHandler={this.onSlimButtonTwoClick}
+										label="walkthroughLastSprite"
+									/>
 								</div>
 								<div className="left-screen-footer-row">
 									{!dataReady ? (
@@ -1773,30 +1783,9 @@ export default class Pokedex extends React.Component {
 						</div>
 					</div>
 				</div>
-				<div className="hinge-container">
-					<div className="hinge-top" />
-					<div className="hinge-middle" />
-					<div className="hinge-bottom" />
-					<div className="hinge-bottom-lid" />
-				</div>
+				<HingeContainer />
 				<div className="right-screen">
-					<div className="right-lid-top" />
-					<div className="right-lid-wrapper">
-						<div className="right-lid-left">
-							<div className="right-lid-left-box" />
-						</div>
-						<div className="right-lid-middle">
-							<div className="right-lid-middle-cut" />
-							<div className="right-lid-middle-diagonal" />
-						</div>
-						<div className="right-lid-right" />
-					</div>
-					<div className="right-lid-bottom">
-						<div className="right-lid-bottom-row">
-							<div className="right-lid-bottom-left-col" />
-							<div className="right-lid-bottom-right-col" />
-						</div>
-					</div>
+					<ScreenHeader />
 					<div className="right-screen-content">
 						<div className="right-screen-content-wrapper">
 							<div className="secondary-display-wrapper" id="secondary_display">
@@ -1835,30 +1824,28 @@ export default class Pokedex extends React.Component {
 							</div>
 							<div className="misc-button-container">
 								<div className="misc-button-left-col">
-									<div
-										className="white-grid-button up"
-										onClick={this.scrollUp}
-										role="button"
-										tabIndex={0}
-										aria-label="Scroll secondary display up"
-										onKeyDown={this.onKeyDown}
+									<ScrollButton
+										directionUp
+										clickHandler={this.scrollUp}
 									/>
-									<div
-										className="white-grid-button down"
-										onClick={this.scrollDown}
-										role="button"
-										tabIndex={0}
-										aria-label="Scroll secondary display down"
-										onKeyDown={this.onKeyDown}
+									<ScrollButton
+										clickHandler={this.scrollDown}
 									/>
 								</div>
 								<div className="misc-button-right-col">
 									<div className="misc-button-row">
-										<SlimButton />
-										<SlimButton noMargin />
+										<SlimButton
+											clickHandler={this.onSlimButtonThreeClick}
+											label="walkthroughScrollTop"
+										/>
+										<SlimButton
+											noMargin
+											clickHandler={this.onSlimButtonFourClick}
+											label="walkthroughScrollBottom"
+										/>
 									</div>
 									<div className="misc-button-row">
-										<ConfirmButton clickHandler={this.onConfirmButtonClick} />
+										<RandomiseButton clickHandler={this.onRandomiseButtonClick} />
 									</div>
 								</div>
 							</div>
