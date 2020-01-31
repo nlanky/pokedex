@@ -33,6 +33,7 @@ img {
 .container {
 	display: flex;
 	flex-direction: column;
+	margin: 0.5rem;
 }
 
 .flex-center {
@@ -45,8 +46,7 @@ img {
 // Left screen
 .left-screen {
 	background-color: $red;
-	min-width: 23.4375rem;
-	max-width: 31.25rem;
+	width: 22.4375rem;
 }
 
 .left-screen-content {
@@ -119,8 +119,7 @@ img {
 .right-screen {
 	display: flex;
 	flex-direction: column;
-	min-width: 23.4375rem;
-	max-width: 31.25rem;
+	width: 22.4375rem;
 }
 
 .right-screen-content {
@@ -183,19 +182,27 @@ img {
 .introjs-helperNumberLayer {
 	background-image: linear-gradient(to bottom, $red 50%, #fff 50%);
 	font-weight: normal;
-	width: 2rem;
-	height: 2rem;
-	line-height: 2rem;
-	top: -2rem;
-	left: -2rem;
-	font-size: 1.5rem;
 	font-family: 'Squada One', cursive;
 	border: 1px solid $darkGrey;
 	color: $darkGrey;
 }
 
 @media only screen and (min-width: 500px) {
+	// Walkthrough
+	.introjs-helperNumberLayer {
+		width: 2rem;
+		height: 2rem;
+		line-height: 2rem;
+		top: -2rem;
+		left: -2rem;
+		font-size: 1.5rem;
+	}	
+
 	// Left screen
+	.left-screen {
+		width: 30.25rem;
+	}
+
 	.left-screen-content {
 		min-height: 36.875rem;
 		padding: 3.125rem 2rem 2rem 2rem;
@@ -226,6 +233,10 @@ img {
 	}
 	
 	// Right screen
+	.right-screen {
+		width: 30.25rem;
+	}
+
 	.right-screen-content-wrapper {
 		min-height: 35.625rem;
 		padding: 1.875rem;
@@ -242,6 +253,8 @@ img {
 		height: 3.75rem;
 	}
 }
+
+
 
 @media only screen and (min-width: 1060px) {
 	#root, body, html {
