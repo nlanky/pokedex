@@ -8,7 +8,7 @@ export default class Database {
 
 	start() {
 		return new Promise((resolve, reject) => {
-			const request = indexedDB.open('pokemon', 1);
+			const request = indexedDB.open('pokemon', 2);
 
 			request.onerror = (event) => {
 				const {
