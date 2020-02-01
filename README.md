@@ -1,6 +1,6 @@
 <h1>Pok&eacute;dex</h1>
 <p>This is an attempt to recreate Ash's Pok&eacute;dex from Season 1 of the Pok&eacute;mon anime series. As the Pok&eacute;dex (pictured below) from the anime didn't provide detailed instructions, most of the functionality is just based off of things I would like to see.</p>
-<img src="/src/assets/images/ash-pokedex-anime.png" style="width: 100%; />
+<img src="/src/assets/images/ash-pokedex-anime.png" style="width: 100%;" />
 <p>All Pok&eacute;mon up to and including Generation 7 are included. There are some limitations based on the availability and format of data from Pok&eacute;API. As of the release of v1.0.6, Generation 8 is not included and therefore the max Pok&eacute;dex number is set to 807.</p>
 <h2>Instructions</h2>
 <img src="/src/assets/images/annotated-pokedex.jpg" style="width: 100%;" />
@@ -31,6 +31,14 @@
 	<li>Scroll to the bottom of the right display</li>
 	<li>Go to a random Pok&eacute;mon</li>
 </ol>
+<h2>Potential Improvements</h2>
+<ul>
+	<li>Investigate evolution detail requests. Can't process more than one in chain due to overlapping requests.</li>
+	<li>Investigate encounter requests. Can't process more than one at once due to overlapping location requests.</li>
+	<li>Add ability to change language. Some of this work has been done but translations sometimes not available from API.</li>
+	<li>Tidy up processing of encounter and move data. Lots of duplicate code here that probably isn't required.</li>
+	<li>Refactor right display component. Currently passing arrays of data to SecondaryDisplay component.</li>
+</ul>
 <h2>Changelog</h2>
 <p>
 	<b>v1.0.5</b><br />
