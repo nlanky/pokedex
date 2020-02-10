@@ -1,3 +1,6 @@
+<p align="center">
+	<a href="https://nlanky.github.io/pokedex/" target="_blank">>>> LIVE DEMO <<<</a>
+</p>
 <h1>Pok&eacute;dex</h1>
 <p>This is an attempt to recreate Ash's Pok&eacute;dex from Season 1 of the Pok&eacute;mon anime series. As the Pok&eacute;dex (pictured below) from the anime didn't provide detailed instructions, most of the functionality is just based off of things I would like to see.</p>
 <img src="/src/assets/images/ash-pokedex-anime.png" style="width: 100%;" />
