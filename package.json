@@ -4,7 +4,7 @@
   "version": "1.0.5",
   "private": true,
   "dependencies": {
-    "axios": "^0.21.1",
+    "axios": "^0.21.2",
     "better-react-spinkit": "^2.0.4",
     "intro.js": "^2.9.3",
     "intro.js-react": "^0.2.0",
