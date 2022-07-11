@@ -1,4 +1,7 @@
 <p align="center">
+	<a href="https://github.com/nlanky/pokedex-v2" target="_blank">>>> V2 NOW AVAILABLE <<<</a>
+</p>
+<p align="center">
 	<a href="https://nlanky.github.io/pokedex/" target="_blank">>>> LIVE DEMO <<<</a>
 </p>
 <h1>Pok&eacute;dex</h1>
